@@ -1,0 +1,15 @@
+matrix:
+  include:
+  - language: ruby
+    rvm: 2.3.4
+    before_script:
+    - cd server
+    - cp config/database.yml.travis config/database.yml
+    - bundle install
+    - bundle exec rake db:create db:migrate RAILS_ENV=test
+    script:
+    - bundle exec rubocop -D
+    - bundle exec rspec
+    services: postgresql
+notifications:
+  email: false
