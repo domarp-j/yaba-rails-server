@@ -1,6 +1,6 @@
 # yaba (Yet Another Budget App) - Rails Server/API
 
-The Rails server & API for yaba
+The Rails server & API for yaba, a simple but intuitive budgeting app.
 
 ## Setup
 
@@ -12,3 +12,7 @@ Note: You will have to prepend app-specific commands with `docker-compose run ra
 
 - Rubocop `docker-compose run rails-server bundle exec rubocop`
 - RSpec `docker-compose run rails-server bundle exec rspec`
+
+## Deploys
+
+Updates to the master branch are automatically deployed to [Heroku](https://www.heroku.com//).
