@@ -9,7 +9,7 @@ RSpec.describe 'transaction items requests:', type: :request do
     sign_in user
   end
 
-  context 'fetching transactions for the signed-in user' do
+  context 'fetching transactions' do
     it "returns all of the user's transactions if (s)he has less than #{limit_default} items" do
       create_list(:transaction_item, limit_default - 1, :purchase, user: user)
 
@@ -83,7 +83,7 @@ RSpec.describe 'transaction items requests:', type: :request do
     end
   end
 
-  context 'adding a new transaction for the signed-in user' do
+  context 'adding a new transaction' do
     it 'succeeds for a valid description, value, and date' do
       description = 'Some purchase'
       value = '-12.3'
@@ -110,7 +110,7 @@ RSpec.describe 'transaction items requests:', type: :request do
     end
   end
 
-  context 'updating a transaction for a signed-in user' do
+  context 'updating a transaction' do
     let(:id) { 1 }
     let(:description) { 'Purchase' }
     let(:value) { -10.3 }
@@ -179,7 +179,7 @@ RSpec.describe 'transaction items requests:', type: :request do
     end
   end
 
-  context 'deleting a transaction for a signed-in user' do
+  context 'deleting a transaction' do
     let(:id) { 1 }
     let(:description) { 'Purchase' }
     let(:value) { -10.3 }
