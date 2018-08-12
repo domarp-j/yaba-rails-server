@@ -69,8 +69,7 @@ class TagsController < ApplicationController
 
   def failed_destroy
     render json: {
-      message: 'Could not delete tag from transaction',
-      content: ''
+      message: 'Could not delete tag from transaction'
     }, status: 400
   end
 end

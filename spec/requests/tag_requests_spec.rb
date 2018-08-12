@@ -144,5 +144,16 @@ RSpec.describe 'tag requests:', type: :request do
       expect(tag.transaction_items.find_by(id: transaction_id)).to be_nil
       expect(transaction_item.tags.find_by(id: tag_id)).to be_nil
     end
+
+    it 'returns a failure if the tag is not attached to the transaction with the given ID' do
+      post destroy_tag_path,
+           params: { name: tag.name, transaction_id: transaction_id },
+           headers: devise_request_headers
+
+      response_body = JSON.parse(response.body)
+
+      expect(response.success?).to be(false)
+      expect(response_body['message']).to eq('Could not delete tag from transaction')
+    end
   end
 end
