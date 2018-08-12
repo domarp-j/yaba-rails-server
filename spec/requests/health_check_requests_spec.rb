@@ -7,7 +7,7 @@ RSpec.describe 'health check requests', type: :request do
 
       expected = {
         'success' => true,
-        'message' => 'You have successfully hit the Yaba API!'
+        'message' => 'You have successfully hit the yaba API!'
       }
       actual = JSON.parse(response.body)
 
