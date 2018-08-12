@@ -66,7 +66,6 @@ RSpec.describe 'tag-transaction requests:', type: :request do
       expect(content[0]).to match(/Could not find transaction item/)
     end
 
-
     it 'returns a failure for an invalid name' do
       post add_tag_transaction_path(transaction_id: trans.id),
            params: { name: '' },
