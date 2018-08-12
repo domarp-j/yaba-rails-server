@@ -1,6 +1,6 @@
 # yaba (Yet Another Budget App) - Rails Server/API
 
-The Rails server & API for yaba
+The Rails server & API for yaba, a simple but intuitive budgeting app.
 
 ## Setup
 
