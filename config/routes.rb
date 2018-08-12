@@ -19,7 +19,8 @@ Rails.application.routes.draw do
     end
 
     scope 'tags' do
-      post '/', to: 'tags_#create', as: 'add_tag'
+      post '/', to: 'tags#create', as: 'add_tag'
+      post '/delete', to: 'tags#destroy', as: 'destroy_tag'
     end
   end
 end

@@ -41,6 +41,8 @@ class Tag < ApplicationRecord
     )
 
     tag_transaction.destroy! if tag_transaction
+
+    self
   end
 
   class << self
