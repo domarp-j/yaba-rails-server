@@ -12,7 +12,10 @@ class TagsController < ApplicationController
     end
   end
 
-  def destroy; end
+  def destroy
+    tag = Tag.find_tag_for(current_user, tag_params)
+             .remove_transaction_with_id(tag_params[:transaction_id])
+  end
 
   private
 
