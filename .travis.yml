@@ -1,14 +1,19 @@
-matrix:
-  include:
-  - language: ruby
-    rvm: 2.3.4
-    before_script:
-    - cp config/database.yml.travis config/database.yml
-    - bundle install
-    - bundle exec rake db:create db:migrate RAILS_ENV=test
-    script:
-    - bundle exec rubocop -D
-    - bundle exec rspec
-    services: postgresql
+language: ruby
+rvm: 2.3.4
+before_script:
+- cp config/database.yml.travis config/database.yml
+- bundle install
+- bundle exec rake db:create db:migrate RAILS_ENV=test
+script:
+- bundle exec rubocop -D
+- bundle exec rspec
+deploy:
+  provider: heroku
+  api_key:
+    secure: fZC44lvyB+rnoGnyelBFnxw6DV3YXdne4V74UaVGj5vCStA0BGywgTK0LvhXI0enAyauL5gFX8ZNEprZFN24noBv3Y8d8tlJLUs873F3GF+EGmTH7MRGUwsGgzMUIR/UwSMGlqnngn53c0JHpXhu4ngNRuEKVzqFwjXIxfRUQoA1Spj83OaeTl4kXTgsMVJTmOWO96S3fHx9uUo8NqiQLd/iqQbLlXUpKmMiufQURP4mC0OmN0pu/gtTLPu7H/9Os8NpyUBIA8PdAz1O2snxUzPdE1kNEFgIJF8adMJXGDbDR35zs8wZ/yWco1XqAa2aMNnxCvOpph/BiJEb506TUgWpfd9a3llkL/p92Tdrb913hoYCTJYHd+XI8e6jOHrZ6TkGChtMJYawLUuijjWNRm9joQHy22hDhkwWvCtkrRSMKbqV8ez4WnSudmSfxh0KWAe12Tyghd/imi1us1iiMz+Gnv0jY/uqStN0ud2VUKOT8TKFdtfrqTcr62VHctsQ4MKucAZT73ke7XwWIuRDyu6GErI1eTbqkpHncaWW9aN3fWzG08vWBVpzFBej/I2KFaWyip1/uGrAaqFij8coKfY1tRpx+HXpVu2+oX30rbFerMmpAw92sNbfnFXjxhSqJ9qDZFWu4zXKsXQWuTBS7YGXleCqL0sVC9IP7Vpvl1I=
+  app: yaba-api
+  on:
+    repo: domarp-j/yaba-rails-server
+services: postgresql
 notifications:
   email: false
