@@ -11,16 +11,16 @@ Rails.application.routes.draw do
     scope 'transaction-items' do
       get '/', to: 'transaction_items#index', as: 'transaction_items'
       post '/', to: 'transaction_items#create', as: 'add_transaction_item'
+
+      scope ':transaction_id/tags' do
+        post '/', to: 'tag_transactions#create', as: 'add_tag_transaction'
+        post '/delete', to: 'tag_transactions#destroy', as: 'destroy_tag_transaction'
+      end
     end
 
     scope 'transaction-item' do
       post '/update', to: 'transaction_items#update', as: 'update_transaction_item'
       post '/delete', to: 'transaction_items#destroy', as: 'delete_transaction_item'
-    end
-
-    scope 'tags' do
-      post '/', to: 'tags#create', as: 'add_tag'
-      post '/delete', to: 'tags#destroy', as: 'destroy_tag'
     end
   end
 end
