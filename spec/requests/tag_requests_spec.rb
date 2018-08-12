@@ -114,4 +114,46 @@ RSpec.describe 'tag requests:', type: :request do
       expect(content[0]).to match(/Could not find transaction item/)
     end
   end
+
+  context 'removing a tag for a signed-in user' do
+    let(:tag_id) { 99 }
+    let(:transaction_id) { 67 }
+    let(:tag_name) { 'some-tag' }
+
+    let!(:transaction_item) { create(:transaction_item, id: transaction_id, user: user) }
+    let!(:tag) { create(:tag, id: tag_id, name: tag_name, user: user) }
+
+    it 'removes the tag from the transaction with a given ID' do
+      create(:tag_transaction, tag: tag, transaction_item: transaction_item)
+
+      expect(tag.transaction_items.find_by(id: transaction_id)).to eq(transaction_item)
+      expect(transaction_item.tags.find_by(id: tag_id)).to eq(tag)
+
+      post destroy_tag_path,
+           params: { name: tag.name, transaction_id: transaction_id },
+           headers: devise_request_headers
+
+      response_body = JSON.parse(response.body)
+      content = response_body['content']
+
+      expect(response.success?).to be(true)
+      expect(response_body['message']).to eq('Tag successfully deleted from transaction')
+      expect(content['id']).to eq(tag_id)
+      expect(content['name']).to eq(tag_name)
+
+      expect(tag.transaction_items.find_by(id: transaction_id)).to be_nil
+      expect(transaction_item.tags.find_by(id: tag_id)).to be_nil
+    end
+
+    it 'returns a failure if the tag is not attached to the transaction with the given ID' do
+      post destroy_tag_path,
+           params: { name: tag.name, transaction_id: transaction_id },
+           headers: devise_request_headers
+
+      response_body = JSON.parse(response.body)
+
+      expect(response.success?).to be(false)
+      expect(response_body['message']).to eq('Could not delete tag from transaction')
+    end
+  end
 end

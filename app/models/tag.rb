@@ -34,12 +34,27 @@ class Tag < ApplicationRecord
     )
   end
 
+  def remove_transaction_with_id(transaction_id)
+    tag_transaction = TagTransaction.find_by(
+      transaction_item_id: transaction_id,
+      tag_id: id
+    )
+
+    tag_transaction.destroy! if tag_transaction
+
+    self
+  end
+
   class << self
-    def find_or_create_tag_for(user, params)
-      existing_tag = user.tags.where(
+    def find_tag_for(user, params)
+      user.tags.where(
         'lower(name) = ?',
         params[:name].downcase
       ).first
+    end
+
+    def find_or_create_tag_for(user, params)
+      existing_tag = find_tag_for(user, params)
       return existing_tag if existing_tag
 
       user.tags.create(

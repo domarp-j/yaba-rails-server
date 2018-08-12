@@ -44,7 +44,52 @@ RSpec.describe Tag, type: :model do
     end
   end
 
-  describe '.find_or_create_tag_for' do
+  describe '#attached_to_transaction?' do
+    let(:transaction_item) { create(:transaction_item, user: user) }
+    let(:tag) { create(:tag, user: user) }
+
+    it 'returns truthy if tag-transaction relationship exists' do
+      create(:tag_transaction, tag: tag, transaction_item: transaction_item)
+
+      expect(tag.attached_to_transaction?(transaction_item.id)).to be_truthy
+    end
+
+    it 'returns falsey if tag-transaction relationship does not exist' do
+      expect(tag.attached_to_transaction?(transaction_item.id)).to be_falsey
+    end
+  end
+
+  describe '#remove_transaction_with_id' do
+    let(:transaction_id) { 15 }
+    let(:tag_id) { 100 }
+    let(:tag_name) { 'test' }
+
+    let(:transaction_item) { create(:transaction_item, id: transaction_id, user: user) }
+    let(:tag) { create(:tag, id: tag_id, name: tag_name, user: user) }
+
+    it 'removes the join between the tag and the transaction with the given id' do
+      create(:tag_transaction, tag: tag, transaction_item: transaction_item)
+
+      expect(tag.transaction_items.find_by(id: transaction_id)).to eq(transaction_item)
+      expect(transaction_item.tags.find_by(id: tag.id)).to eq(tag)
+
+      tag.remove_transaction_with_id(transaction_id)
+
+      expect(tag.transaction_items.find_by(id: transaction_id)).to be_nil
+      expect(transaction_item.tags.find_by(id: tag.id)).to be_nil
+    end
+
+    it 'fails gracefully if the tag-transaction relationship does not exist' do
+      another_tag = create(:tag, id: tag_id + 1, name: 'another-tag', user: user)
+
+      another_tag.remove_transaction_with_id(transaction_id)
+
+      expect(tag.transaction_items.find_by(id: transaction_id)).to be_nil
+      expect(transaction_item.tags.find_by(id: another_tag.id)).to be_nil
+    end
+  end
+
+  describe '.find_tag_for' do
     it 'returns a tag with the given name if it exists' do
       name = 'purchase'
       tag_id = 3
@@ -57,7 +102,7 @@ RSpec.describe Tag, type: :model do
         name: name
       }
 
-      tag = Tag.find_or_create_tag_for(user, params)
+      tag = Tag.find_tag_for(user, params)
       new_tag_count = Tag.count
 
       expect(tag.id).to eq(tag_id)
@@ -76,6 +121,29 @@ RSpec.describe Tag, type: :model do
 
       params = {
         name: name.downcase
+      }
+
+      tag = Tag.find_tag_for(user, params)
+      new_tag_count = Tag.count
+
+      expect(tag.id).to eq(tag_id)
+      expect(tag.name).to eq(name)
+      expect(tag.persisted?).to be(true)
+      expect(new_tag_count - prev_tag_count).to eq(0)
+    end
+  end
+
+  describe '.find_or_create_tag_for' do
+    it 'returns a tag with the given name if it exists' do
+      name = 'purchase'
+      tag_id = 3
+
+      create(:tag, id: tag_id, name: name, user: user)
+
+      prev_tag_count = Tag.count
+
+      params = {
+        name: name
       }
 
       tag = Tag.find_or_create_tag_for(user, params)
