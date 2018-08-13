@@ -59,7 +59,7 @@ RSpec.describe Tag, type: :model do
     end
   end
 
-  describe '#remove_transaction_with_id' do
+  describe '#remove_tag_from_transaction_with_id' do
     let(:transaction_id) { 15 }
     let(:tag_id) { 100 }
     let(:tag_name) { 'test' }
@@ -73,7 +73,7 @@ RSpec.describe Tag, type: :model do
       expect(tag.transaction_items.find_by(id: transaction_id)).to eq(transaction_item)
       expect(transaction_item.tags.find_by(id: tag.id)).to eq(tag)
 
-      tag.remove_transaction_with_id(transaction_id)
+      tag.remove_tag_from_transaction_with_id(transaction_id)
 
       expect(tag.transaction_items.find_by(id: transaction_id)).to be_nil
       expect(transaction_item.tags.find_by(id: tag.id)).to be_nil
@@ -82,7 +82,7 @@ RSpec.describe Tag, type: :model do
     it 'fails gracefully if the tag-transaction relationship does not exist' do
       another_tag = create(:tag, id: tag_id + 1, name: 'another-tag', user: user)
 
-      another_tag.remove_transaction_with_id(transaction_id)
+      another_tag.remove_tag_from_transaction_with_id(transaction_id)
 
       expect(tag.transaction_items.find_by(id: transaction_id)).to be_nil
       expect(transaction_item.tags.find_by(id: another_tag.id)).to be_nil
@@ -90,11 +90,30 @@ RSpec.describe Tag, type: :model do
   end
 
   describe '.find_tag_for' do
-    it 'returns a tag with the given name if it exists' do
-      name = 'purchase'
-      tag_id = 3
+    let(:name) { 'purchase' }
+    let(:tag_id) { 3 }
+    let(:create_tag) { create(:tag, id: tag_id, name: name, user: user) }
 
-      create(:tag, id: tag_id, name: name, user: user)
+    it 'returns a tag with the given ID if it exists' do
+      create_tag
+
+      prev_tag_count = Tag.count
+
+      params = {
+        id: tag_id
+      }
+
+      tag = Tag.find_tag_for(user, params)
+      new_tag_count = Tag.count
+
+      expect(tag.id).to eq(tag_id)
+      expect(tag.name).to eq(name)
+      expect(tag.persisted?).to be(true)
+      expect(new_tag_count - prev_tag_count).to eq(0)
+    end
+
+    it 'returns a tag with the given name if it exists' do
+      create_tag
 
       prev_tag_count = Tag.count
 

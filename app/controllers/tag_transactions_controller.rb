@@ -1,5 +1,6 @@
 class TagTransactionsController < ApplicationController
   before_action :authenticate_user!
+  # TODO: Render a 404 response is transaction ID is not given as param
 
   def create
     tag = Tag.find_or_create_tag_for(current_user, tag_params)
@@ -12,11 +13,22 @@ class TagTransactionsController < ApplicationController
     end
   end
 
+  def update
+    tag = Tag.find_tag_for(current_user, tag_params)
+
+    if tag && tag.attached_to_transaction?(trans_id)
+      tag.update_tag_with_transaction_id(trans_id, tag_params)
+      successful_update(tag)
+    else
+      failed_update
+    end
+  end
+
   def destroy
     tag = Tag.find_tag_for(current_user, tag_params)
 
     if tag && tag.attached_to_transaction?(trans_id)
-      tag.remove_transaction_with_id(trans_id)
+      tag.remove_tag_from_transaction_with_id(trans_id)
       successful_destroy(tag)
     else
       failed_destroy
@@ -38,13 +50,16 @@ class TagTransactionsController < ApplicationController
     tag.attached_to_transaction?(transaction_id)
   end
 
-  def successful_create(tag)
+  def tag_json(tag)
     tag_json = tag.jsonify
-    tag_json[:transaction_id] = params[:transaction_id].to_i
+    tag_json[:transaction_id] = trans_id.to_i
+    tag_json
+  end
 
+  def successful_create(tag)
     render json: {
       message: 'Tag successfully saved',
-      content: tag_json
+      content: tag_json(tag)
     }, status: 200
   end
 
@@ -58,13 +73,23 @@ class TagTransactionsController < ApplicationController
     }, status: 400
   end
 
-  def successful_destroy(tag)
-    tag_json = tag.jsonify
-    tag_json[:transaction_id] = params[:transaction_id].to_i
+  def successful_update(tag)
+    render json: {
+      message: 'Tag successfully updated',
+      content: tag_json(tag)
+    }, status: 200
+  end
 
+  def failed_update
+    render json: {
+      message: 'Could not update tag'
+    }, status: 400
+  end
+
+  def successful_destroy(tag)
     render json: {
       message: 'Tag successfully deleted from transaction',
-      content: tag_json
+      content: tag_json(tag)
     }, status: 200
   end
 
