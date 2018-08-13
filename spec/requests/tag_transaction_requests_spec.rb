@@ -106,7 +106,7 @@ RSpec.describe 'tag-transaction requests:', type: :request do
       expect(response_body['message']).to eq('Tag successfully deleted from transaction')
       expect(content['id']).to eq(tag_id)
       expect(content['name']).to eq(tag_name)
-
+      expect(content['transaction_id']).to eq(transaction_id)
       expect(tag.transaction_items.find_by(id: transaction_id)).to be_nil
       expect(transaction_item.tags.find_by(id: tag_id)).to be_nil
     end
