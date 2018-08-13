@@ -26,7 +26,7 @@ class TagTransactionsController < ApplicationController
   private
 
   def tag_params
-    params.permit(:name, :transaction_id)
+    params.permit(:id, :name, :transaction_id)
   end
 
   def trans_id
@@ -40,9 +40,7 @@ class TagTransactionsController < ApplicationController
 
   def successful_create(tag)
     tag_json = tag.jsonify
-    if params[:transaction_id]
-      tag_json[:transaction_id] = params[:transaction_id].to_i
-    end
+    tag_json[:transaction_id] = params[:transaction_id].to_i
 
     render json: {
       message: 'Tag successfully saved',
@@ -61,9 +59,12 @@ class TagTransactionsController < ApplicationController
   end
 
   def successful_destroy(tag)
+    tag_json = tag.jsonify
+    tag_json[:transaction_id] = params[:transaction_id].to_i
+
     render json: {
       message: 'Tag successfully deleted from transaction',
-      content: tag.jsonify
+      content: tag_json
     }, status: 200
   end
 
