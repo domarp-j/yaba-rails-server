@@ -34,7 +34,7 @@ class Tag < ApplicationRecord
     )
   end
 
-  def remove_tag_from_transaction_with_id(transaction_id)
+  def remove_from_transaction_with_id(transaction_id)
     tag_transaction = TagTransaction.find_by(
       transaction_item_id: transaction_id,
       tag_id: id
@@ -46,15 +46,14 @@ class Tag < ApplicationRecord
     self
   end
 
-  def update_tag_with_transaction_id(transaction_id, params)
-    tag_transaction = TagTransaction.find_by(
-      transaction_item_id: transaction_id,
-      tag_id: id
-    )
-
-    tag_transaction.destroy! if tag_transaction
-
-    self
+  def update_for_transaction_with_id(transaction_id, user, params)
+    transaction = user.transaction_items.find_by(id: transaction_id)
+    return unless transaction
+    tag = transaction.tags.find_by(id: params[:id])
+    return unless tag
+    tag.update(name: params[:name])
+    tag.save!
+    tag
   end
 
   class << self

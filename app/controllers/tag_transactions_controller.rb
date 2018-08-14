@@ -17,7 +17,7 @@ class TagTransactionsController < ApplicationController
     tag = Tag.find_tag_for(current_user, tag_params)
 
     if tag && tag.attached_to_transaction?(trans_id)
-      tag.update_tag_with_transaction_id(trans_id, tag_params)
+      tag.update_for_transaction_with_id(trans_id, current_user, tag_params)
       successful_update(tag)
     else
       failed_update
@@ -28,7 +28,7 @@ class TagTransactionsController < ApplicationController
     tag = Tag.find_tag_for(current_user, tag_params)
 
     if tag && tag.attached_to_transaction?(trans_id)
-      tag.remove_tag_from_transaction_with_id(trans_id)
+      tag.remove_from_transaction_with_id(trans_id)
       successful_destroy(tag)
     else
       failed_destroy
@@ -38,7 +38,7 @@ class TagTransactionsController < ApplicationController
   private
 
   def tag_params
-    params.permit(:id, :name, :transaction_id)
+    params.permit(:id, :name, :new_name, :transaction_id)
   end
 
   def trans_id
