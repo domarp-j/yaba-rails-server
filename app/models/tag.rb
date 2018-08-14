@@ -34,23 +34,35 @@ class Tag < ApplicationRecord
     )
   end
 
-  def remove_transaction_with_id(transaction_id)
+  def remove_from_transaction_with_id(transaction_id)
     tag_transaction = TagTransaction.find_by(
       transaction_item_id: transaction_id,
       tag_id: id
     )
 
     tag_transaction.destroy! if tag_transaction
+    # TODO: delete tag if it is not associated with any more transactions
 
     self
   end
 
+  def update_for_transaction_with_id(transaction_id, user, params)
+    transaction = user.transaction_items.find_by(id: transaction_id)
+    return unless transaction
+    tag = transaction.tags.find_by(id: params[:id])
+    return unless tag
+    tag.update(name: params[:name])
+    tag.save!
+    tag
+  end
+
   class << self
     def find_tag_for(user, params)
-      user.tags.where(
-        'lower(name) = ?',
-        params[:name].downcase
-      ).first
+      if params[:id]
+        user.tags.find_by(id: params[:id])
+      else
+        user.tags.where('lower(name) = ?', params[:name].downcase).first
+      end
     end
 
     def find_or_create_tag_for(user, params)
