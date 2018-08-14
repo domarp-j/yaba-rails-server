@@ -15,13 +15,15 @@ class TagTransactionsController < ApplicationController
 
   def update
     tag = Tag.find_tag_for(current_user, tag_params)
+    return failed_update unless tag
 
-    if tag && tag.attached_to_transaction?(trans_id)
-      tag.update_for_transaction_with_id(trans_id, current_user, tag_params)
-      successful_update(tag)
-    else
-      failed_update
-    end
+    updated_tag = tag.update_for_transaction_with_id(
+      trans_id,
+      current_user,
+      tag_params
+    )
+
+    updated_tag ? successful_update(updated_tag) : failed_update
   end
 
   def destroy
@@ -75,7 +77,7 @@ class TagTransactionsController < ApplicationController
 
   def successful_update(tag)
     render json: {
-      message: 'Tag successfully updated',
+      message: 'Tag successfully updated for transaction',
       content: tag_json(tag)
     }, status: 200
   end
