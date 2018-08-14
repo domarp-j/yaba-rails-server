@@ -40,7 +40,7 @@ class TagTransactionsController < ApplicationController
   private
 
   def tag_params
-    params.permit(:id, :name, :new_name, :transaction_id)
+    params.permit(:id, :name, :transaction_id)
   end
 
   def trans_id
