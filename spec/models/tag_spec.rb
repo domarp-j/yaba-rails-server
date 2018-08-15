@@ -79,6 +79,27 @@ RSpec.describe Tag, type: :model do
       expect(transaction_item.tags.find_by(id: tag.id)).to be_nil
     end
 
+    it 'does not destroy the tag if it is still associated with other transactions' do
+      another_transaction = create(:transaction_item, description: 'Another transaction', user: user)
+
+      create(:tag_transaction, tag: tag, transaction_item: transaction_item)
+      create(:tag_transaction, tag: tag, transaction_item: another_transaction)
+
+      tag.remove_from_transaction_with_id(transaction_id)
+
+      persisted_tag = Tag.find_by(id: tag_id, name: tag_name)
+      expect(persisted_tag).not_to be_nil
+    end
+
+    it 'destroys the tag if it is no longer associated with any transactions' do
+      create(:tag_transaction, tag: tag, transaction_item: transaction_item)
+
+      tag.remove_from_transaction_with_id(transaction_id)
+
+      destroyed_tag = Tag.find_by(id: tag_id, name: tag_name)
+      expect(destroyed_tag).to be_nil
+    end
+
     it 'fails gracefully if the tag-transaction relationship does not exist' do
       another_tag = create(:tag, id: tag_id + 1, name: 'another-tag', user: user)
 
