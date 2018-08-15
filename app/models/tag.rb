@@ -41,7 +41,7 @@ class Tag < ApplicationRecord
     )
 
     tag_transaction.destroy! if tag_transaction
-    # TODO: delete tag if it is not associated with any more transactions
+    destroy! if transaction_items.empty?
 
     self
   end
