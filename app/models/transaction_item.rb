@@ -13,7 +13,7 @@ class TransactionItem < ApplicationRecord
       description: description,
       value: value,
       date: date,
-      tags: tags.map(&:jsonify)
+      tags: tags.map(&:jsonify).sort_by { |tag| tag[:name] }
     }
   end
 

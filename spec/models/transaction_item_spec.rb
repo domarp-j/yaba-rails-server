@@ -16,11 +16,15 @@ RSpec.describe TransactionItem, type: :model do
              value: test_value,
              user: user)
     end
-    let(:tag) do
-      create(:tag, name: 'Tag', user: user)
+
+    let(:first_tag) { create(:tag, name: 'tag_a', user: user) }
+    let(:second_tag) { create(:tag, name: 'tag_b', user: user) }
+
+    let(:first_tag_transaction) do
+      create(:tag_transaction, tag: first_tag, transaction_item: transaction_item)
     end
-    let(:tag_transaction) do
-      create(:tag_transaction, tag: tag, transaction_item: transaction_item)
+    let(:second_tag_transaction) do
+      create(:tag_transaction, tag: second_tag, transaction_item: transaction_item)
     end
 
     let(:jsonified_transaction) { transaction_item.jsonify }
@@ -37,9 +41,14 @@ RSpec.describe TransactionItem, type: :model do
       expect(jsonified_transaction[:date]).not_to be_nil
     end
 
-    it 'returns a JSON with an array of the transaction\'s tags' do
-      tag_transaction
-      expect(jsonified_transaction[:tags]).to eq([{ id: tag.id, name: tag.name }])
+    it 'returns a JSON with an array of the transaction\'s tags in alphabetical order' do
+      first_tag_transaction
+      second_tag_transaction
+
+      expect(jsonified_transaction[:tags]).to eq([
+                                                   { id: first_tag.id, name: first_tag.name },
+                                                   { id: second_tag.id, name: second_tag.name }
+                                                 ])
     end
   end
 
