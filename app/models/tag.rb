@@ -13,6 +13,13 @@ class Tag < ApplicationRecord
     }
   end
 
+  def attached_to_transaction?(transaction_id)
+    TagTransaction.find_by(
+      transaction_item_id: transaction_id,
+      tag_id: id
+    )
+  end
+
   def attach_to_transaction_with_id(transaction_id)
     return self if invalid?
 
@@ -27,51 +34,80 @@ class Tag < ApplicationRecord
     self
   end
 
-  def attached_to_transaction?(transaction_id)
-    TagTransaction.find_by(
-      transaction_item_id: transaction_id,
-      tag_id: id
-    )
-  end
-
-  def remove_from_transaction_with_id(transaction_id)
+  def remove_from_transaction_with_id(trans_id)
     tag_transaction = TagTransaction.find_by(
-      transaction_item_id: transaction_id,
+      transaction_item_id: trans_id,
       tag_id: id
     )
 
+    # Remove tag-transaction relationship
     tag_transaction.destroy! if tag_transaction
+
+    # Destroy self if no longer associated with any transactions
     destroy! if transaction_items.empty?
 
     self
   end
 
-  def update_for_transaction_with_id(transaction_id, user, params)
-    transaction = user.transaction_items.find_by(id: transaction_id)
+  def create_or_update_for_transaction_with_id(trans_id, user, params)
+    transaction = user.transaction_items.find_by(id: trans_id)
     return unless transaction
-    tag = transaction.tags.find_by(id: params[:id])
-    return unless tag
-    tag.update(name: params[:name])
-    tag.save!
-    tag
+
+    handle_create_update_for(user, trans_id, params)
   end
 
-  class << self
-    def find_tag_for(user, params)
-      if params[:id]
-        user.tags.find_by(id: params[:id])
-      else
-        user.tags.where('lower(name) = ?', params[:name].downcase).first
-      end
+  def self.find_tag_for(user, params)
+    if params[:id]
+      user.tags.find_by(id: params[:id])
+    else
+      user.tags.where('lower(name) = ?', params[:name].downcase).first
     end
+  end
 
-    def find_or_create_tag_for(user, params)
-      existing_tag = find_tag_for(user, params)
-      return existing_tag if existing_tag
+  def self.create_tag_for(user, params)
+    user.tags.create(name: params[:name])
+  end
 
-      user.tags.create(
-        name: params[:name]
-      )
+  def self.find_or_create_tag_for(user, params)
+    existing_tag = find_tag_for(user, params)
+    return existing_tag if existing_tag
+
+    create_tag_for(user, params)
+  end
+
+  private
+
+  def handle_create_update_for(user, trans_id, params)
+    # Check if user already has a tag with the new name
+    tag_with_new_name = Tag.find_tag_for(user, name: params[:name])
+
+    # If the user already has a tag with the new name
+    # then associate that tag with the transaction
+    # and delete the current tag's relationship with the transaction
+    if tag_with_new_name
+      remove_from_transaction_with_id(trans_id)
+      tag_with_new_name.attach_to_transaction_with_id(trans_id)
+
+    # If the user does not have a tag with the new name
+    # and the current tag is associated with multiple transactions
+    # then create a new tag with the new name
+    # and associate it with the provided transaction
+    # and delete the older tag's relationship with the provided transaction
+    elsif transaction_items.length > 1
+      remove_from_transaction_with_id(trans_id)
+      Tag.create_tag_for(user, params).attach_to_transaction_with_id(trans_id)
+
+    # If the user does not have a tag with the new name
+    # and the currente tag is only associated with the provided transaction
+    # then simply update the name of the current tag
+    else
+      update_with_params(params)
     end
+  end
+
+  def update_with_params(params)
+    update(name: params[:name])
+    save!
+    self
   end
 end

@@ -17,13 +17,13 @@ class TagTransactionsController < ApplicationController
     tag = Tag.find_tag_for(current_user, tag_params)
     return failed_update unless tag
 
-    updated_tag = tag.update_for_transaction_with_id(
+    new_or_updated_tag = tag.create_or_update_for_transaction_with_id(
       trans_id,
       current_user,
       tag_params
     )
 
-    updated_tag ? successful_update(updated_tag) : failed_update
+    new_or_updated_tag ? successful_update(new_or_updated_tag) : failed_update
   end
 
   def destroy

@@ -14,6 +14,21 @@ RSpec.describe Tag, type: :model do
     end
   end
 
+  describe '#attached_to_transaction?' do
+    let(:transaction_item) { create(:transaction_item, user: user) }
+    let(:tag) { create(:tag, user: user) }
+
+    it 'returns truthy if tag-transaction relationship exists' do
+      create(:tag_transaction, tag: tag, transaction_item: transaction_item)
+
+      expect(tag.attached_to_transaction?(transaction_item.id)).to be_truthy
+    end
+
+    it 'returns falsey if tag-transaction relationship does not exist' do
+      expect(tag.attached_to_transaction?(transaction_item.id)).to be_falsey
+    end
+  end
+
   describe '#attach_to_transaction_with_id' do
     let(:transaction_id) { 11 }
     let!(:transaction_item) { create(:transaction_item, id: transaction_id, user: user) }
@@ -41,21 +56,6 @@ RSpec.describe Tag, type: :model do
 
       expect(tag.transaction_items.find_by(id: transaction_id)).to be_nil
       expect(transaction_item.tags.find_by(id: tag.id)).to be_nil
-    end
-  end
-
-  describe '#attached_to_transaction?' do
-    let(:transaction_item) { create(:transaction_item, user: user) }
-    let(:tag) { create(:tag, user: user) }
-
-    it 'returns truthy if tag-transaction relationship exists' do
-      create(:tag_transaction, tag: tag, transaction_item: transaction_item)
-
-      expect(tag.attached_to_transaction?(transaction_item.id)).to be_truthy
-    end
-
-    it 'returns falsey if tag-transaction relationship does not exist' do
-      expect(tag.attached_to_transaction?(transaction_item.id)).to be_falsey
     end
   end
 
@@ -110,7 +110,7 @@ RSpec.describe Tag, type: :model do
     end
   end
 
-  describe '#update_for_transaction_with_id' do
+  describe '#create_or_update_for_transaction_with_id' do
     let(:transaction_id) { 16 }
     let(:tag_id) { 100 }
     let(:tag_name) { 'test' }
@@ -120,7 +120,7 @@ RSpec.describe Tag, type: :model do
     let(:tag) { create(:tag, id: tag_id, name: tag_name, user: user) }
     let!(:tag_transaction) { create(:tag_transaction, tag: tag, transaction_item: transaction_item) }
 
-    it 'updates a tag with a new name' do
+    it 'edits the existing tag if it is only used for one transaction' do
       tag_params = {
         id: tag_id,
         name: new_tag_name
@@ -128,42 +128,52 @@ RSpec.describe Tag, type: :model do
 
       expect(tag.name).to eq(tag_name)
 
-      tag.update_for_transaction_with_id(transaction_id, user, tag_params)
+      tag.create_or_update_for_transaction_with_id(transaction_id, user, tag_params)
+
       updated_tag = Tag.find_by(id: tag_id)
 
       expect(updated_tag.name).to eq(new_tag_name)
     end
 
-    it 'returns nil if tag is not found' do
-      tag_params = {
-        id: tag_id + 1,
-        name: new_tag_name
-      }
+    context 'updating a tag attached to >1 transaction' do
+      let!(:another_transaction) { create(:transaction_item, description: 'another-trans', user: user) }
+      let!(:another_tag_transaction) { create(:tag_transaction, tag: tag, transaction_item: another_transaction) }
 
-      expect(tag.name).to eq(tag_name)
+      let(:tag_params) { { id: tag_id, name: new_tag_name } }
 
-      result = tag.update_for_transaction_with_id(transaction_id, user, tag_params)
-      expect(result).to be_nil
+      it 'creates a new tag if the user does not already have a tag with the new name' do
+        prev_tag_count = Tag.count
 
-      tag = Tag.find_by(id: tag_id)
-      expect(tag.name).to eq(tag_name)
-    end
+        tag.create_or_update_for_transaction_with_id(transaction_id, user, tag_params)
+        new_tag = Tag.find_by(name: new_tag_name)
 
-    it 'does not update the tag for another user' do
-      another_user = create(:user, email: 'helloworld@test.com')
-      another_transaction = create(:transaction_item, user: user)
+        expect(new_tag).not_to be_nil
+        expect(Tag.count).to eq(prev_tag_count + 1)
+      end
 
-      tag_params = {
-        id: tag_id,
-        name: new_tag_name
-      }
+      it 'attaches to a tag with the new name if that tag already exists' do
+        another_tag = create(:tag, name: new_tag_name, user: user)
+        another_transaction2 = create(:transaction_item, description: 'another-trans-2', user: user)
+        create(:tag_transaction, tag_id: another_tag.id, transaction_item_id: another_transaction2.id)
 
-      expect(tag.name).to eq(tag_name)
+        prev_tag_count = Tag.where(name: new_tag_name, user: user).count
 
-      tag.update_for_transaction_with_id(another_transaction.id, another_user, tag_params)
+        tag.create_or_update_for_transaction_with_id(transaction_id, user, tag_params)
+        new_tag_count = Tag.where(name: new_tag_name, user: user).count
 
-      tag = Tag.find_by(id: tag_id)
-      expect(tag.name).to eq(tag_name)
+        expect(new_tag_count).to eq(prev_tag_count)
+        expect(tag.transaction_items.find_by(id: transaction_id)).to be_nil
+        expect(another_tag.transaction_items.find_by(id: transaction_id)).to eq(transaction_item)
+      end
+
+      it 'deletes the tag-transaction relationship for the current tag' do
+        tag_trans = TagTransaction.find_by(tag_id: tag.id, transaction_item_id: transaction_id)
+        expect(tag_trans).not_to be_nil
+
+        tag.create_or_update_for_transaction_with_id(transaction_id, user, tag_params)
+        tag_trans = TagTransaction.find_by(tag_id: tag.id, transaction_item_id: transaction_id)
+        expect(tag_trans).to be_nil
+      end
     end
   end
 
