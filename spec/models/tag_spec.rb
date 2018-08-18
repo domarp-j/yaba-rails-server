@@ -153,8 +153,8 @@ RSpec.describe Tag, type: :model do
 
       it 'attaches to a tag with the new name if that tag already exists' do
         another_tag = create(:tag, name: new_tag_name, user: user)
-        another_transaction_2 = create(:transaction_item, description: 'another-trans-2', user: user)
-        create(:tag_transaction, tag_id: another_tag.id, transaction_item_id: another_transaction_2.id)
+        another_transaction2 = create(:transaction_item, description: 'another-trans-2', user: user)
+        create(:tag_transaction, tag_id: another_tag.id, transaction_item_id: another_transaction2.id)
 
         prev_tag_count = Tag.where(name: new_tag_name, user: user).count
 
