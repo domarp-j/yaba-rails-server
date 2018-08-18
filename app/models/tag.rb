@@ -26,9 +26,9 @@ class Tag < ApplicationRecord
     trans = TransactionItem.find_by(id: transaction_id)
     return self unless trans
 
-    TagTransaction.create(
-      transaction_item_id: transaction_id,
-      tag_id: id
+    TagTransaction.find_or_create_by(
+      tag_id: id,
+      transaction_item_id: transaction_id
     )
 
     self
@@ -56,7 +56,7 @@ class Tag < ApplicationRecord
     handle_create_update_for(user, trans_id, params)
   end
 
-  def self.find_tag_for(user, params)
+  def self.find_for(user, params)
     if params[:id]
       user.tags.find_by(id: params[:id])
     else
@@ -64,22 +64,22 @@ class Tag < ApplicationRecord
     end
   end
 
-  def self.create_tag_for(user, params)
+  def self.create_for(user, params)
     user.tags.create(name: params[:name])
   end
 
-  def self.find_or_create_tag_for(user, params)
-    existing_tag = find_tag_for(user, params)
+  def self.find_or_create_for(user, params)
+    existing_tag = find_for(user, params)
     return existing_tag if existing_tag
 
-    create_tag_for(user, params)
+    create_for(user, params)
   end
 
   private
 
   def handle_create_update_for(user, trans_id, params)
     # Check if user already has a tag with the new name
-    tag_with_new_name = Tag.find_tag_for(user, name: params[:name])
+    tag_with_new_name = Tag.find_for(user, name: params[:name])
 
     # If the user already has a tag with the new name
     # then associate that tag with the transaction
@@ -95,7 +95,7 @@ class Tag < ApplicationRecord
     # and delete the older tag's relationship with the provided transaction
     elsif transaction_items.length > 1
       remove_from_transaction_with_id(trans_id)
-      Tag.create_tag_for(user, params).attach_to_transaction_with_id(trans_id)
+      Tag.create_for(user, params).attach_to_transaction_with_id(trans_id)
 
     # If the user does not have a tag with the new name
     # and the currente tag is only associated with the provided transaction

@@ -79,6 +79,22 @@ RSpec.describe 'tag-transaction requests:', type: :request do
       expect(message).to eq('Could not create tag')
       expect(content[0]).to match(/Name is too short/)
     end
+
+    it 'returns a failure if a tag with the provided name is already attached to the transaction' do
+      create(:tag_transaction, tag_id: existing_tag.id, transaction_item_id: trans.id)
+
+      post add_tag_transaction_path(transaction_id: trans.id),
+           params: { name: existing_tag.name },
+           headers: devise_request_headers
+
+      response_body = JSON.parse(response.body)
+      message = response_body['message']
+      content = response_body['content']
+
+      expect(response.success?).to be(false)
+      expect(message).to eq('Could not create tag')
+      expect(content[0]).to match('Tag already exists for that transaction')
+    end
   end
 
   context 'updating a tag for a transaction' do
