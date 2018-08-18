@@ -152,18 +152,18 @@ RSpec.describe Tag, type: :model do
       end
 
       it 'attaches to a tag with the new name if that tag already exists' do
-        # another_tag = create(:tag, name: new_tag_name, user: user)
-        # another_transaction_2 = create(:transaction_item, description: 'another-trans-2', user: user)
-        # create(:tag_transaction, tag_id: another_tag.id, transaction_item_id: another_transaction_2.id)
+        another_tag = create(:tag, name: new_tag_name, user: user)
+        another_transaction_2 = create(:transaction_item, description: 'another-trans-2', user: user)
+        create(:tag_transaction, tag_id: another_tag.id, transaction_item_id: another_transaction_2.id)
 
-        # prev_tag_count = Tag.where(name: new_tag_name, user: user).count
+        prev_tag_count = Tag.where(name: new_tag_name, user: user).count
 
-        # tag.create_or_update_for_transaction_with_id(transaction_id, user, tag_params)
-        # new_tag_count = Tag.where(name: new_tag_name, user: user).count
+        tag.create_or_update_for_transaction_with_id(transaction_id, user, tag_params)
+        new_tag_count = Tag.where(name: new_tag_name, user: user).count
 
-        # expect(new_tag_count).to eq(prev_tag_count)
-        # expect(tag.transaction_items.find_by(id: transaction_id)).to be_nil
-        # expect(another_tag.transaction_items.find_by(id: transaction_id)).to eq(transaction_item)
+        expect(new_tag_count).to eq(prev_tag_count)
+        expect(tag.transaction_items.find_by(id: transaction_id)).to be_nil
+        expect(another_tag.transaction_items.find_by(id: transaction_id)).to eq(transaction_item)
       end
 
       it 'deletes the tag-transaction relationship for the current tag' do
