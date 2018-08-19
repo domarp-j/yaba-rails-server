@@ -4,7 +4,7 @@ class TagTransactionsController < ApplicationController
   # TODO: Improve error messages
 
   def create
-    return failed_create if transaction_has_tag?
+    return failed_create if transaction_has_tag_with_given_name?
 
     tag = Tag.find_or_create_for(current_user, tag_params)
              .attach_to_transaction_with_id(trans_id)
@@ -50,7 +50,7 @@ class TagTransactionsController < ApplicationController
     tag_params[:transaction_id]
   end
 
-  def transaction_has_tag?
+  def transaction_has_tag_with_given_name?
     trans = current_user.transaction_items.find_by(id: trans_id)
     trans && trans.attached_to_tag_with_name?(tag_params[:name])
   end
