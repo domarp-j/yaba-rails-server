@@ -59,11 +59,11 @@ RSpec.describe 'tag-transaction requests:', type: :request do
 
       response_body = JSON.parse(response.body)
       message = response_body['message']
-      content = response_body['content']
+      # content = response_body['content']
 
       expect(response.success?).to be(false)
       expect(message).to eq('Could not create tag')
-      expect(content[0]).to match(/Could not find transaction item/)
+      # expect(content[0]).to match(/Could not find transaction item/)
     end
 
     it 'returns a failure for an invalid name' do
@@ -73,11 +73,11 @@ RSpec.describe 'tag-transaction requests:', type: :request do
 
       response_body = JSON.parse(response.body)
       message = response_body['message']
-      content = response_body['content']
+      # content = response_body['content']
 
       expect(response.success?).to be(false)
       expect(message).to eq('Could not create tag')
-      expect(content[0]).to match(/Name is too short/)
+      # expect(content[0]).to match(/Name is too short/)
     end
 
     it 'returns a failure if a tag with the provided name is already attached to the transaction' do
@@ -89,11 +89,11 @@ RSpec.describe 'tag-transaction requests:', type: :request do
 
       response_body = JSON.parse(response.body)
       message = response_body['message']
-      content = response_body['content']
+      # content = response_body['content']
 
       expect(response.success?).to be(false)
       expect(message).to eq('Could not create tag')
-      expect(content[0]).to match('Tag already exists for that transaction')
+      # expect(content[0]).to match('Tag already exists for that transaction')
     end
   end
 

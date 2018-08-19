@@ -17,6 +17,10 @@ class TransactionItem < ApplicationRecord
     }
   end
 
+  def attached_to_tag_with_name?(tag_name)
+    tags.find_by(name: tag_name).present?
+  end
+
   def self.fetch_transactions_for(user, limit: DEFAULT_LIMIT, page: FIRST_PAGE)
     includes(:tags, :tag_transactions)
       .where(user_id: user.id)

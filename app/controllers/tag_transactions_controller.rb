@@ -1,15 +1,18 @@
 class TagTransactionsController < ApplicationController
   before_action :authenticate_user!
   # TODO: Render a 404 response is transaction ID is not given as param
+  # TODO: Improve error messages
 
   def create
+    return failed_create if transaction_has_tag?
+
     tag = Tag.find_or_create_for(current_user, tag_params)
              .attach_to_transaction_with_id(trans_id)
 
     if tag.valid? && tag.attached_to_transaction?(trans_id)
       successful_create(tag)
     else
-      failed_create(tag)
+      failed_create
     end
   end
 
@@ -47,6 +50,11 @@ class TagTransactionsController < ApplicationController
     tag_params[:transaction_id]
   end
 
+  def transaction_has_tag?
+    trans = current_user.transaction_items.find_by(id: trans_id)
+    trans && trans.attached_to_tag_with_name?(tag_params[:name])
+  end
+
   def tag_json(tag)
     tag_json = tag.jsonify
     tag_json[:transaction_id] = trans_id.to_i
@@ -60,13 +68,9 @@ class TagTransactionsController < ApplicationController
     }, status: 200
   end
 
-  def failed_create(tag, message: nil)
-    errors = tag.errors.full_messages
-    errors << 'Could not find transaction item' if params[:transaction_id]
-
+  def failed_create
     render json: {
-      message: 'Could not create tag',
-      content: message || errors
+      message: 'Could not create tag'
     }, status: 400
   end
 

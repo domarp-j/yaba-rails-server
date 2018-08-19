@@ -52,6 +52,22 @@ RSpec.describe TransactionItem, type: :model do
     end
   end
 
+  describe '#attached_to_tag_with_name?' do
+    let(:transaction) { create(:transaction_item, user: user) }
+    let(:tag_name) { 'test' }
+
+    it 'returns truthy if transaction has tag with the given name' do
+      tag = create(:tag, name: tag_name, user: user)
+      create(:tag_transaction, tag_id: tag.id, transaction_item_id: transaction.id)
+
+      expect(transaction.attached_to_tag_with_name?(tag_name)).to be(true)
+    end
+
+    it 'returns falsey if transaction does not have tag with the given name' do
+      expect(transaction.attached_to_tag_with_name?(tag_name)).to be(false)
+    end
+  end
+
   describe '.fetch_transactions_for' do
     let(:transaction_items) do
       # Bulk of old incomes
