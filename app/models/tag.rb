@@ -26,13 +26,7 @@ class Tag < ApplicationRecord
     trans = TransactionItem.find_by(id: transaction_id)
     return self unless trans
 
-    existing_tag_trans = TagTransaction.find_by(
-      tag_id: id,
-      transaction_item_id: transaction_id
-    )
-    return self unless existing_tag_trans
-
-    TagTransaction.create(
+    TagTransaction.find_or_create_by(
       tag_id: id,
       transaction_item_id: transaction_id
     )
