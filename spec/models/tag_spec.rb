@@ -35,7 +35,7 @@ RSpec.describe Tag, type: :model do
 
     it 'attaches the tag to the transaction with the given id' do
       tag = create(:tag, user: user)
-      tag.attach_to_transaction_with_id(transaction_id)
+      tag.attach_to_transaction_with_id(transaction_item.id)
 
       expect(tag.transaction_items.find_by(id: transaction_id)).to eq(transaction_item)
       expect(transaction_item.tags.find_by(id: tag.id)).to eq(tag)
@@ -43,7 +43,7 @@ RSpec.describe Tag, type: :model do
 
     it 'does not attach the tag to a transaction if the tag is invalid' do
       tag = build(:tag, name: '', user: user)
-      tag.attach_to_transaction_with_id(transaction_id)
+      tag.attach_to_transaction_with_id(transaction_item.id)
 
       expect(tag.invalid?).to be(true)
       expect(tag.transaction_items.find_by(id: transaction_id)).to be_nil
@@ -52,10 +52,23 @@ RSpec.describe Tag, type: :model do
 
     it 'does not attach the tag to a transaction if the transaction does not exist' do
       tag = build(:tag, name: '', user: user)
-      tag.attach_to_transaction_with_id(100)
+      tag.attach_to_transaction_with_id(transaction_item.id + 1)
 
       expect(tag.transaction_items.find_by(id: transaction_id)).to be_nil
       expect(transaction_item.tags.find_by(id: tag.id)).to be_nil
+    end
+
+    it 'does not attach the tag if the tag-transaction relationship already exists' do
+      tag = create(:tag, user: user)
+      create(:tag_transaction, tag_id: tag.id, transaction_item_id: transaction_item.id)
+
+      prev_tag_transaction_count = TagTransaction.where(tag_id: tag.id, transaction_item_id: transaction_item.id).count
+      expect(prev_tag_transaction_count).to eq(1)
+
+      tag.attach_to_transaction_with_id(transaction_item.id)
+
+      new_tag_transaction_count = TagTransaction.where(tag_id: tag.id, transaction_item_id: transaction_item.id).count
+      expect(new_tag_transaction_count).to eq(1)
     end
   end
 
