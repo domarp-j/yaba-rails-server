@@ -68,6 +68,36 @@ RSpec.describe TransactionItem, type: :model do
     end
   end
 
+  describe '#destroy_with_tags!' do
+    let(:transaction) { create(:transaction_item, user: user) }
+    let(:tag) { create(:tag, user: user) }
+
+    it 'destroys the transaction' do
+      transaction.destroy_with_tags!
+
+      expect(TransactionItem.find_by(id: transaction.id)).to be_nil
+    end
+
+    it 'destroys tags that will be orphaned by the transaction\'s deletion' do
+      create(:tag_transaction, tag_id: tag.id, transaction_item_id: transaction.id)
+
+      transaction.destroy_with_tags!
+
+      expect(Tag.find_by(id: tag.id)).to be_nil
+    end
+
+    it 'does not destroy tags that are associated with other transactions' do
+      create(:tag_transaction, tag_id: tag.id, transaction_item_id: transaction.id)
+
+      another_transaction = create(:transaction_item, description: 'another trans', user: user)
+      create(:tag_transaction, tag_id: tag.id, transaction_item_id: another_transaction.id)
+
+      transaction.destroy_with_tags!
+
+      expect(Tag.find_by(id: tag.id)).to eq(tag)
+    end
+  end
+
   describe '.fetch_transactions_for' do
     let(:transaction_items) do
       # Bulk of old incomes

@@ -29,7 +29,7 @@ class TransactionItemsController < ApplicationController
     trans = current_user.transaction_items.find_by(id: trans_params[:id])
     return failed_destroy unless trans
     trans_json = trans.jsonify
-    trans.destroy
+    trans.destroy_with_tags!
     successful_destroy(trans_json)
   end
 

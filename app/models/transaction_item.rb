@@ -21,6 +21,14 @@ class TransactionItem < ApplicationRecord
     tags.find_by(name: tag_name).present?
   end
 
+  def destroy_with_tags!
+    tags.each do |tag|
+      tag.destroy! if tag.transaction_items.length == 1
+    end
+
+    destroy!
+  end
+
   def self.fetch_transactions_for(user, limit: DEFAULT_LIMIT, page: FIRST_PAGE)
     includes(:tags, :tag_transactions)
       .where(user_id: user.id)
