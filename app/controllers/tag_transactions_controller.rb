@@ -6,7 +6,7 @@ class TagTransactionsController < ApplicationController
     tag = Tag.find_or_create_for(current_user, tag_params)
              .attach_to_transaction_with_id(trans_id)
 
-    if tag.valid? && tag.attached_to_transaction?(trans_id)
+    if tag.valid? && (trans_id || tag.attached_to_transaction?(trans_id))
       successful_create(tag)
     else
       failed_create(tag)
