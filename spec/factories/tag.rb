@@ -1,5 +1,5 @@
 FactoryBot.define do
   factory :tag do
-    name 'some-tag'
+    name Faker::RickAndMorty.quote.gsub(/\s/, '')
   end
 end

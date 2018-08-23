@@ -1,4 +1,6 @@
 class TransactionItem < ApplicationRecord
+  # TODO: Remove use of params throughout
+
   has_many :tag_transactions
   has_many :tags, through: :tag_transactions
 

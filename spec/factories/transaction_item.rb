@@ -1,7 +1,7 @@
 FactoryBot.define do
   factory :transaction_item do
-    description 'no purchase'
-    value 0
+    description Faker::NewGirl.quote
+    value Faker::Number.decimal(2)
     date Time.now
 
     trait :income do

@@ -15,6 +15,7 @@ gem 'rails', '~> 5.1.4'
 group :development, :test do
   gem 'bullet', '~> 5.7.5'
   gem 'capybara', '~> 2.13'
+  gem 'faker', '~> 1.9.1'
   gem 'pry-byebug', '~> 3.6'
   gem 'rspec-rails', '~> 3.7'
 end
