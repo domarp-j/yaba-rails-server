@@ -1,4 +1,6 @@
 class Tag < ApplicationRecord
+  # TODO: Remove use of params throughout
+
   has_many :tag_transactions
   has_many :transaction_items, through: :tag_transactions
 
@@ -56,23 +58,39 @@ class Tag < ApplicationRecord
     handle_create_update_for(user, trans_id, params)
   end
 
-  def self.find_for(user, params)
-    if params[:id]
-      user.tags.find_by(id: params[:id])
-    else
-      user.tags.where('lower(name) = ?', params[:name].downcase).first
+  class << self
+    def find_for(user, params)
+      if params[:id]
+        user.tags.find_by(id: params[:id])
+      else
+        Tag.find_by_names_for_user(user, params[:name]).first
+      end
     end
-  end
 
-  def self.create_for(user, params)
-    user.tags.create(name: params[:name])
-  end
+    def create_for(user, params)
+      user.tags.create(name: params[:name])
+    end
 
-  def self.find_or_create_for(user, params)
-    existing_tag = find_for(user, params)
-    return existing_tag if existing_tag
+    def find_or_create_for(user, params)
+      existing_tag = find_for(user, params)
+      return existing_tag if existing_tag
 
-    create_for(user, params)
+      create_for(user, params)
+    end
+
+    def fetch_transactions_for_tags_with_names(tag_names, user)
+      tag_ids = user.tags.where(name: tag_names)
+                    .select(:id)
+
+      trans_ids = TagTransaction.where(tag_id: tag_ids)
+                                .select(:transaction_item_id)
+
+      TransactionItem.where(id: trans_ids)
+    end
+
+    def find_by_names_for_user(user, name)
+      user.tags.where('lower(name) = ?', name.downcase)
+    end
   end
 
   private

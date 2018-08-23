@@ -3,6 +3,15 @@ class TagTransactionsController < ApplicationController
   # TODO: Render a 404 response is transaction ID is not given as param
   # TODO: Improve error messages
 
+  def index
+    return failed_fetch unless tag_names.present?
+
+    transactions = Tag.fetch_transactions_for_tags_with_names(
+      tag_names, current_user
+    )
+    transactions ? successful_fetch(transactions) : failed_fetch
+  end
+
   def create
     return failed_create if transaction_has_tag_with_given_name?
 
@@ -46,6 +55,10 @@ class TagTransactionsController < ApplicationController
     params.permit(:id, :name, :transaction_id)
   end
 
+  def tag_names
+    params.permit(:tag_names)[:tag_names]
+  end
+
   def trans_id
     tag_params[:transaction_id]
   end
@@ -59,6 +72,22 @@ class TagTransactionsController < ApplicationController
     tag_json = tag.jsonify
     tag_json[:transaction_id] = trans_id.to_i
     tag_json
+  end
+
+  def successful_fetch(transactions)
+    render json: {
+      message: 'Transactions fetched for tags',
+      content: {
+        tag_names: tag_names,
+        transactions: transactions.map(&:jsonify)
+      }
+    }, status: 200
+  end
+
+  def failed_fetch
+    render json: {
+      message: 'Could not fetch transactions for provided tags'
+    }, status: 400
   end
 
   def successful_create(tag)

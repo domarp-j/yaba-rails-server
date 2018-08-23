@@ -13,6 +13,7 @@ Rails.application.routes.draw do
       post '/', to: 'transaction_items#create', as: 'add_transaction_item'
 
       scope ':transaction_id/tags' do
+        get '/', to: 'tag_transactions#index', as: 'tag_transaction'
         post '/', to: 'tag_transactions#create', as: 'add_tag_transaction'
         post '/update', to: 'tag_transactions#update', as: 'update_tag_transaction'
         post '/delete', to: 'tag_transactions#destroy', as: 'destroy_tag_transaction'
