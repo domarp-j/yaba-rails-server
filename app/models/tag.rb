@@ -78,13 +78,17 @@ class Tag < ApplicationRecord
   end
 
   def self.fetch_transactions_for_tags_with_names(tag_names, user)
-    tag_ids = user.tags.where(name: tag_names)
+    # TODO: Optimize this query, possibly using a JOIN table?
+
+    tag_ids = user.tags
+                  .where(name: tag_names)
                   .select(:id)
 
     trans_ids = TagTransaction.where(tag_id: tag_ids)
                               .select(:transaction_item_id)
 
-    TransactionItem.where(id: trans_ids)
+    TransactionItem.includes(:tags, :tag_transactions)
+                   .where(id: trans_ids)
   end
 
   def self.find_by_names_for_user(user, name)

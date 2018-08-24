@@ -3,7 +3,7 @@ class QueriesController < ApplicationController
 
   def create
     transactions = Tag.fetch_transactions_for_tags_with_names(
-      query_params[:tag_names], current_user
+      tag_names_params, current_user
     )
 
     if transactions && transactions.present?
@@ -15,8 +15,8 @@ class QueriesController < ApplicationController
 
   private
 
-  def query_params
-    params.permit(:tag_names)
+  def tag_names_params
+    params.require(:tag_names)
   end
 
   def successful_query(transactions)
