@@ -42,5 +42,17 @@ RSpec.describe 'query requests:', type: :request do
         end
       end
     end
+
+    it 'returns a failure if tags are not found with the provided names' do
+      post create_query_path,
+           params: { tag_names: ['random-tag', 'some-tag'] },
+           headers: devise_request_headers
+
+      response_body = JSON.parse(response.body)
+      message = response_body['message']
+
+      expect(response.success?).to be(false)
+      expect(message).to eq('Invalid query for transactions')
+    end
   end
 end
