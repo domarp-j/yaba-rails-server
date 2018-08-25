@@ -14,14 +14,18 @@ Rails.application.routes.draw do
 
       scope ':transaction_id/tags' do
         post '/', to: 'tag_transactions#create', as: 'add_tag_transaction'
-        post '/update', to: 'tag_transactions#update', as: 'update_tag_transaction'
-        post '/delete', to: 'tag_transactions#destroy', as: 'destroy_tag_transaction'
+        post '/update', to: 'tag_transactions#update', as: 'update_tag_transaction' # TODO: make this a PATCH/PUT
+        post '/delete', to: 'tag_transactions#destroy', as: 'destroy_tag_transaction' # TODO: make this a DELETE
       end
     end
 
     scope 'transaction-item' do
-      post '/update', to: 'transaction_items#update', as: 'update_transaction_item'
-      post '/delete', to: 'transaction_items#destroy', as: 'delete_transaction_item'
+      post '/update', to: 'transaction_items#update', as: 'update_transaction_item' # TODO: make this a PATCH/PUT
+      post '/delete', to: 'transaction_items#destroy', as: 'delete_transaction_item' # TODO: make this a DELETE
+    end
+
+    scope 'queries' do
+      post '/', to: 'queries#create', as: 'create_query'
     end
   end
 end
