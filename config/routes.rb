@@ -23,9 +23,5 @@ Rails.application.routes.draw do
       post '/update', to: 'transaction_items#update', as: 'update_transaction_item' # TODO: make this a PATCH/PUT
       post '/delete', to: 'transaction_items#destroy', as: 'delete_transaction_item' # TODO: make this a DELETE
     end
-
-    scope 'queries' do
-      post '/', to: 'queries#create', as: 'create_query'
-    end
   end
 end
