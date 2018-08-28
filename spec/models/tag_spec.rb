@@ -302,4 +302,56 @@ RSpec.describe Tag, type: :model do
       expect(tag.valid?).to be(false)
     end
   end
+
+  describe '.get_transaction_ids_for' do
+    let(:tag_names) { %w[tag1 tag2 tag3] }
+    let(:tags) do
+      tag_names.map { |tag_name| create(:tag, name: tag_name, user: user) }
+    end
+    let(:tag_ids) { tags.map(&:id) }
+    let(:random_tags) { create_list(:tag, 5, user: user) }
+    let(:random_tag_ids) { random_tags.map(&:id) }
+
+    before do
+      [tags, random_tags].flatten.each do |tag|
+        transactions = create_list(:transaction_item, rand(1..4), user: user)
+        transactions.each do |trans|
+          create(:tag_transaction, tag_id: tag.id, transaction_item_id: trans.id)
+        end
+      end
+    end
+
+    it 'returns transaction IDs for tags with the provided collection of names' do
+      trans_ids = Tag.get_transaction_ids_for(tag_names, user)
+
+      trans_ids.each do |trans_id|
+        trans = TransactionItem.find_by(id: trans_id)
+        expect(trans.tags.length).to eq(1)
+        expect(tag_ids).to include(trans.tags.first.id)
+      end
+    end
+
+    it 'does not include transaction IDs that should not be included' do
+      trans_ids = Tag.get_transaction_ids_for(tag_names, user)
+
+      trans_ids.each do |trans_id|
+        trans = TransactionItem.find_by(id: trans_id)
+        expect(trans.tags.length).to eq(1)
+        expect(random_tag_ids).not_to include(trans.tags.first.id)
+      end
+    end
+
+    it 'does not fail if tag with given name does not exist' do
+      nonexistent_tag_name = 'some-tag'
+      all_tag_names = tag_names.push(nonexistent_tag_name)
+
+      trans_ids = Tag.get_transaction_ids_for(all_tag_names, user)
+
+      trans_ids.each do |trans_id|
+        trans = TransactionItem.find_by(id: trans_id)
+        expect(trans.tags.length).to eq(1)
+        expect(trans.tags.first).not_to eq(nonexistent_tag_name)
+      end
+    end
+  end
 end

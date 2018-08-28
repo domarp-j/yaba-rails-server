@@ -31,32 +31,67 @@ class TransactionItem < ApplicationRecord
     destroy!
   end
 
-  def self.fetch_transactions_for(user, limit: DEFAULT_LIMIT, page: FIRST_PAGE)
-    includes(:tags, :tag_transactions)
-      .where(user_id: user.id)
-      .order(date: :desc)
-      .limit(limit)
-      .offset(limit * page)
-  end
-
-  def self.build_transaction_for(user, params)
-    user.transaction_items.build(
-      description: params[:description],
-      value: params[:value].to_f,
-      date: Time.parse(params[:date])
+  class << self
+    def fetch_transactions_for(
+      user,
+      limit: DEFAULT_LIMIT,
+      page: FIRST_PAGE,
+      tag_names: []
     )
-  end
+      includes(:tags, :tag_transactions)
+        .where(
+          matches_filter_criteria(
+            user: user,
+            tag_names: tag_names
+          )
+        )
+        .order(date: :desc)
+        .limit(limit)
+        .offset(limit * page)
+    end
 
-  def self.update_transaction_for(user, params)
-    trans = user.transaction_items.find_by(id: params[:id])
-    return unless trans
-    trans.update(description: params[:description]) if params[:description]
-    trans.update(value: params[:value].to_f) if params[:value]
-    if params[:date]
-      trans.update(
+    def build_transaction_for(user, params)
+      user.transaction_items.build(
+        description: params[:description],
+        value: params[:value].to_f,
         date: Time.parse(params[:date])
       )
     end
-    trans
+
+    def update_transaction_for(user, params)
+      trans = user.transaction_items.find_by(id: params[:id])
+      return unless trans
+      trans.update(description: params[:description]) if params[:description]
+      trans.update(value: params[:value].to_f) if params[:value]
+      if params[:date]
+        trans.update(
+          date: Time.parse(params[:date])
+        )
+      end
+      trans
+    end
+
+    def filter_by_tag_names!(tag_names)
+      tag_ids = user.tags
+                    .where(name: tag_names)
+                    .select(:id)
+
+      trans_ids = TagTransaction.where(tag_id: tag_ids)
+                                .select(:transaction_item_id)
+
+      where(id: trans_ids)
+    end
+
+    private
+
+    def matches_filter_criteria(user:, tag_names:)
+      query = { user_id: user.id }
+
+      return query unless tag_names.present?
+      trans_ids = Tag.get_transaction_ids_for(tag_names, user)
+      query[:id] = trans_ids
+
+      query
+    end
   end
 end
