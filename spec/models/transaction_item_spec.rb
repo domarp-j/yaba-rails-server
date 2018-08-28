@@ -101,10 +101,10 @@ RSpec.describe TransactionItem, type: :model do
   describe '.fetch_transactions_for' do
     before do
       # Bulk of old incomes
-      create_list(:transaction_item, limit_default, :income, user: user, date: 3.weeks.ago)
+      create_list(:transaction_item, limit_default, :repeated_income, :three_weeks_ago, user: user)
 
       # Bulk of old puchases
-      create_list(:transaction_item, limit_default, :repeated_purchase, user: user, date: 1.weeks.ago)
+      create_list(:transaction_item, limit_default, :repeated_purchase, :one_week_ago, user: user)
     end
 
     # A few recent purchases & incomes
@@ -150,6 +150,27 @@ RSpec.describe TransactionItem, type: :model do
       result.each do |transaction_item|
         expect(transaction_item.date).to be_within(1.hour).of(1.weeks.ago)
       end
+    end
+
+    it 'sorts transactions on the same date at descending created_at order' do
+      trans1 = create(:transaction_item, created_at: 5.minutes.ago, user: user)
+      trans2 = create(:transaction_item, created_at: 10.minutes.ago, user: user)
+      trans3 = create(:transaction_item, created_at: 15.minutes.ago, user: user)
+
+      result = TransactionItem.fetch_transactions_for(user)
+
+      expect(result[0..2]).to eq([trans1, trans2, trans3])
+    end
+
+    it 'does not remove duplicate transaction items over multiple fetches in sequence' do
+      result1 = TransactionItem.fetch_transactions_for(user, limit: 3, page: 0)
+      result2 = TransactionItem.fetch_transactions_for(user, limit: 3, page: 1)
+      result3 = TransactionItem.fetch_transactions_for(user, limit: 3, page: 2)
+
+      trans_ids = [result1, result2, result3].flatten.pluck(:id)
+      uniq_trans_ids = trans_ids.uniq
+
+      expect(trans_ids).to eq(uniq_trans_ids), 'Duplicate transactions were returned over sequential fetches'
     end
 
     it 'fetches transactions with specific tags if tag names are provided' do
