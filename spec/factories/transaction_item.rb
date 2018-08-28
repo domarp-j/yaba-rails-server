@@ -24,6 +24,11 @@ FactoryBot.define do
       value(-1000)
     end
 
+    trait :repeated_income do
+      description 'repeated income'
+      value 10
+    end
+
     trait :repeated_purchase do
       description 'repeated purchase'
       value(-10)
