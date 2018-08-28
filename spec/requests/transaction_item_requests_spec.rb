@@ -10,24 +10,34 @@ RSpec.describe 'transaction items requests:', type: :request do
   end
 
   context 'fetching transactions' do
+    def assert_response_success(response, body)
+      expect(response.success?).to be(true)
+      expect(body['message']).to eq('Transactions successfully fetched')
+    end
+
+    def assert_response_failure(response, body)
+      expect(response.success?).to be(false)
+      expect(body['message']).to eq('Could not fetch transactions')
+    end
+
     it "returns all of the user's transactions if (s)he has less than #{limit_default} items" do
       create_list(:transaction_item, limit_default - 1, :purchase, user: user)
 
       get transaction_items_path, headers: devise_request_headers
-      actual = JSON.parse(response.body)
+      body = JSON.parse(response.body)
 
-      expect(response.success?).to be(true)
-      expect(actual['content'].length).to eq(limit_default - 1)
+      assert_response_success(response, body)
+      expect(body['content'].length).to eq(limit_default - 1)
     end
 
     it "returns just #{limit_default} transactions if (s)he has more than #{limit_default} transactions" do
       create_list(:transaction_item, limit_default + 1, :purchase, user: user)
 
       get transaction_items_path, headers: devise_request_headers
-      actual = JSON.parse(response.body)
+      body = JSON.parse(response.body)
 
-      expect(response.success?).to be(true)
-      expect(actual['content'].length).to eq(limit_default)
+      assert_response_success(response, body)
+      expect(body['content'].length).to eq(limit_default)
     end
 
     it 'returns a specific number of the user\'s latest transaction items if limit is given as a parameter' do
@@ -35,11 +45,11 @@ RSpec.describe 'transaction items requests:', type: :request do
       create_list(:transaction_item, 5, :purchase, :one_week_ago, user: user)
 
       get transaction_items_path, params: { limit: 5 }, headers: devise_request_headers
-      actual = JSON.parse(response.body)
+      body = JSON.parse(response.body)
 
-      expect(response.success?).to be(true)
-      expect(actual['content'].length).to eq(5)
-      actual['content'].each do |transaction|
+      assert_response_success(response, body)
+      expect(body['content'].length).to eq(5)
+      body['content'].each do |transaction|
         expect(Time.parse(transaction['date'])).to be_within(1.hour).of(1.week.ago)
       end
     end
@@ -49,11 +59,11 @@ RSpec.describe 'transaction items requests:', type: :request do
       create_list(:transaction_item, limit_default, :purchase, :one_week_ago, user: user)
 
       get transaction_items_path, params: { page: 1 }, headers: devise_request_headers
-      actual = JSON.parse(response.body)
+      body = JSON.parse(response.body)
 
-      expect(response.success?).to be(true)
-      expect(actual['content'].length).to eq(limit_default)
-      actual['content'].each do |transaction|
+      assert_response_success(response, body)
+      expect(body['content'].length).to eq(limit_default)
+      body['content'].each do |transaction|
         expect(Time.parse(transaction['date'])).to be_within(1.hour).of(2.week.ago)
       end
     end
@@ -63,12 +73,38 @@ RSpec.describe 'transaction items requests:', type: :request do
       create_list(:transaction_item, 5, :purchase, :one_week_ago, user: user)
 
       get transaction_items_path, params: { limit: 6, page: 1 }, headers: devise_request_headers
-      actual = JSON.parse(response.body)
+      body = JSON.parse(response.body)
 
-      transaction = actual['content'][0]
+      assert_response_success(response, body)
 
-      expect(response.success?).to be(true)
+      transaction = body['content'][0]
       expect(Time.parse(transaction['date'])).to be_within(1.hour).of(2.week.ago)
+    end
+
+    it 'returns transactions for specific tags if tag_names is provided as a parameter' do
+      tag_names = ['some-tag-1', 'some-tag-2']
+
+      create_list(:transaction_item, 3, :purchase, user: user).each do |trans|
+        tag = create(:tag, name: tag_names[0], user: user)
+        create(:tag_transaction, tag_id: tag.id, transaction_item_id: trans.id)
+      end
+
+      create_list(:transaction_item, 2, :large_purchase, user: user).each do |trans|
+        tag = create(:tag, name: tag_names[1], user: user)
+        create(:tag_transaction, tag_id: tag.id, transaction_item_id: trans.id)
+      end
+
+      create_list(:transaction_item, 10, :income, user: user)
+
+      get transaction_items_path, params: { tag_names: tag_names }, headers: devise_request_headers
+      body = JSON.parse(response.body)
+
+      assert_response_success(response, body)
+      expect(body['content'].length).to eq(5)
+      body['content'].each do |trans_json|
+        tag_names_in_response = trans_json['tags'].map { |tag_json| tag_json['name'] }
+        tag_names_in_response.each { |tag| expect(tag_names).to include(tag) }
+      end
     end
 
     it 'does not return transaction items for other users' do
@@ -76,10 +112,20 @@ RSpec.describe 'transaction items requests:', type: :request do
       create_list(:transaction_item, 5, :large_income, user: another_user)
 
       get transaction_items_path, headers: devise_request_headers
-      actual = JSON.parse(response.body)
+      body = JSON.parse(response.body)
 
-      expect(response.success?).to be(true)
-      expect(actual['content'].length).to eq(0)
+      assert_response_failure(response, body)
+    end
+
+    it 'returns a failure if no transactions are found' do
+      another_user = create(:user, email: 'test3@example.com')
+
+      sign_in another_user
+
+      get transaction_items_path, headers: devise_request_headers
+      body = JSON.parse(response.body)
+
+      assert_response_failure(response, body)
     end
   end
 

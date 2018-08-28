@@ -81,6 +81,16 @@ class Tag < ApplicationRecord
     user.tags.where('lower(name) = ?', name.downcase)
   end
 
+  def self.get_transaction_ids_for(tag_names, user)
+    tag_ids = user.tags
+                  .where(name: tag_names)
+                  .select(:id)
+
+    TagTransaction.where(tag_id: tag_ids)
+                  .select(:transaction_item_id)
+                  .map(&:transaction_item_id)
+  end
+
   private
 
   def handle_create_update_for(user, trans_id, params)

@@ -99,22 +99,18 @@ RSpec.describe TransactionItem, type: :model do
   end
 
   describe '.fetch_transactions_for' do
-    let(:transaction_items) do
+    before do
       # Bulk of old incomes
       create_list(:transaction_item, limit_default, :income, user: user, date: 3.weeks.ago)
 
       # Bulk of old puchases
       create_list(:transaction_item, limit_default, :repeated_purchase, user: user, date: 1.weeks.ago)
-
-      # A few recent purchases & incomes
-      create(:transaction_item, :purchase, user: user, date: 3.days.ago)
-      create(:transaction_item, :large_income, user: user, date: 2.days.ago)
-      create(:transaction_item, :large_purchase, user: user, date: 1.days.ago)
     end
 
-    before do
-      transaction_items
-    end
+    # A few recent purchases & incomes
+    let!(:purchase) { create(:transaction_item, :purchase, user: user, date: 3.days.ago) }
+    let!(:large_income) { create(:transaction_item, :large_income, user: user, date: 2.days.ago) }
+    let!(:large_purchase) { create(:transaction_item, :large_purchase, user: user, date: 1.days.ago) }
 
     it "fetches #{limit_default} transactions by default" do
       result = TransactionItem.fetch_transactions_for(user)
@@ -153,6 +149,26 @@ RSpec.describe TransactionItem, type: :model do
       expect(result.count).to eq(limit)
       result.each do |transaction_item|
         expect(transaction_item.date).to be_within(1.hour).of(1.weeks.ago)
+      end
+    end
+
+    it 'fetches transactions with specific tags if tag names are provided' do
+      purchase_tag = create(:tag, name: 'purchase-tag', user: user)
+      create(:tag_transaction, tag_id: purchase_tag.id, transaction_item_id: purchase.id)
+
+      large_income_tag = create(:tag, name: 'large-income-tag', user: user)
+      create(:tag_transaction, tag_id: large_income_tag.id, transaction_item_id: large_income.id)
+
+      large_purchase_tag = create(:tag, name: 'large-purchase-tag', user: user)
+      create(:tag_transaction, tag_id: large_purchase_tag.id, transaction_item_id: large_purchase.id)
+
+      tags = [purchase_tag, large_income_tag, large_purchase_tag]
+
+      result = TransactionItem.fetch_transactions_for(user, tag_names: tags.map(&:name))
+
+      expect(result.count).to eq(3)
+      result.each do |transaction_item|
+        expect([purchase, large_income, large_purchase]).to include(transaction_item)
       end
     end
 
