@@ -45,7 +45,7 @@ class TransactionItem < ApplicationRecord
             tag_names: tag_names
           )
         )
-        .order(date: :desc)
+        .order(date: :desc, created_at: :desc)
         .limit(limit)
         .offset(limit * page)
     end
