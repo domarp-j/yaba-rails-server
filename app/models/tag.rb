@@ -87,8 +87,7 @@ class Tag < ApplicationRecord
                   .select(:id)
 
     TagTransaction.where(tag_id: tag_ids)
-                  .select(:transaction_item_id)
-                  .map(&:transaction_item_id)
+                  .pluck(:transaction_item_id)
   end
 
   private
