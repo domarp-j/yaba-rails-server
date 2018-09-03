@@ -86,8 +86,20 @@ class Tag < ApplicationRecord
                   .where(name: tag_names)
                   .select(:id)
 
-    TagTransaction.where(tag_id: tag_ids)
-                  .pluck(:transaction_item_id)
+    trans_ids = TagTransaction.where(tag_id: tag_ids)
+                              .pluck(:transaction_item_id)
+
+    user.transaction_items
+        .where(id: trans_ids)
+        .select do |trans|
+          trans.tags.contains_all_ids?(tag_ids)
+        end
+  end
+
+  def self.contains_all_ids?(tag_ids)
+    # Check if current tag collection's IDs contains tag_ids arg as a subarray
+    # TODO: This could be implemented without the need for string conversion
+    pluck(:id).sort.join('-').match(tag_ids.pluck(:id).sort.join('-'))
   end
 
   private
@@ -97,8 +109,8 @@ class Tag < ApplicationRecord
     tag_with_new_name = Tag.find_for(user, name: params[:name])
 
     # If the user already has a tag with the new name
-    # then associate that tag with the transaction
-    # and delete the current tag's relationship with the transaction
+    # then delete the current tag's relationship with the transaction with id "trans_id"
+    # and associate the new tag with that same transaction
     if tag_with_new_name
       remove_from_transaction_with_id(trans_id)
       tag_with_new_name.attach_to_transaction_with_id(trans_id)
@@ -113,7 +125,7 @@ class Tag < ApplicationRecord
       Tag.create_for(user, params).attach_to_transaction_with_id(trans_id)
 
     # If the user does not have a tag with the new name
-    # and the currente tag is only associated with the provided transaction
+    # and the current tag is only associated with the provided transaction
     # then simply update the name of the current tag
     else
       update_with_params(params)

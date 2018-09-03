@@ -196,7 +196,7 @@ RSpec.describe TransactionItem, type: :model do
         create(:tag_transaction, tag_id: tag3.id, transaction_item_id: large_purchase.id)
       end
 
-      it "fetches all transactions with the following tag names (case 1)" do
+      it 'fetches all transactions with the following tag names (case 1)' do
         result = TransactionItem.fetch_transactions_for(user, tag_names: tag_list1.map(&:name))
 
         expect(result.count).to eq(3)
@@ -205,7 +205,7 @@ RSpec.describe TransactionItem, type: :model do
         end
       end
 
-      it "fetches all transactions with the following tag names (case 2)" do
+      it 'fetches all transactions with the following tag names (case 2)' do
         result = TransactionItem.fetch_transactions_for(user, tag_names: tag_list2.map(&:name))
 
         expect(result.count).to eq(2)
@@ -214,7 +214,7 @@ RSpec.describe TransactionItem, type: :model do
         end
       end
 
-      it "fetches all transactions with the following tag names (case 3)" do
+      it 'fetches all transactions with the following tag names (case 3)' do
         result = TransactionItem.fetch_transactions_for(user, tag_names: tag_list3.map(&:name))
 
         expect(result.count).to eq(1)
