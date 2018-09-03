@@ -303,7 +303,7 @@ RSpec.describe Tag, type: :model do
     end
   end
 
-  describe '.get_transaction_ids_for' do
+  describe '.get_transaction_ids_for_tags_with_names' do
     let(:tag_names) { %w[tag1 tag2 tag3] }
     let(:tags) do
       tag_names.map { |tag_name| create(:tag, name: tag_name, user: user) }
@@ -322,7 +322,7 @@ RSpec.describe Tag, type: :model do
     end
 
     it 'returns transaction IDs for tags with the provided collection of names' do
-      trans_ids = Tag.get_transaction_ids_for(tag_names, user)
+      trans_ids = Tag.get_transaction_ids_for_tags_with_names(tag_names, user)
 
       trans_ids.each do |trans_id|
         trans = TransactionItem.find_by(id: trans_id)
@@ -332,7 +332,7 @@ RSpec.describe Tag, type: :model do
     end
 
     it 'does not include transaction IDs that should not be included' do
-      trans_ids = Tag.get_transaction_ids_for(tag_names, user)
+      trans_ids = Tag.get_transaction_ids_for_tags_with_names(tag_names, user)
 
       trans_ids.each do |trans_id|
         trans = TransactionItem.find_by(id: trans_id)
@@ -345,7 +345,7 @@ RSpec.describe Tag, type: :model do
       nonexistent_tag_name = 'some-tag'
       all_tag_names = tag_names.push(nonexistent_tag_name)
 
-      trans_ids = Tag.get_transaction_ids_for(all_tag_names, user)
+      trans_ids = Tag.get_transaction_ids_for_tags_with_names(all_tag_names, user)
 
       trans_ids.each do |trans_id|
         trans = TransactionItem.find_by(id: trans_id)

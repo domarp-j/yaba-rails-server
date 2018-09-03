@@ -88,7 +88,7 @@ class TransactionItem < ApplicationRecord
       query = { user_id: user.id }
 
       return query unless tag_names.present?
-      trans_ids = Tag.get_transaction_ids_for(tag_names, user)
+      trans_ids = Tag.get_transaction_ids_for_tags_with_names(tag_names, user)
       query[:id] = trans_ids
 
       query
