@@ -173,23 +173,52 @@ RSpec.describe TransactionItem, type: :model do
       expect(trans_ids).to eq(uniq_trans_ids), 'Duplicate transactions were returned over sequential fetches'
     end
 
-    it 'fetches transactions with specific tags if tag names are provided' do
-      purchase_tag = create(:tag, name: 'purchase-tag', user: user)
-      create(:tag_transaction, tag_id: purchase_tag.id, transaction_item_id: purchase.id)
+    context 'with tag names' do
+      let(:tag1) { create(:tag, name: 'tag1', user: user) }
+      let(:tag2) { create(:tag, name: 'tag2', user: user) }
+      let(:tag3) { create(:tag, name: 'tag3', user: user) }
 
-      large_income_tag = create(:tag, name: 'large-income-tag', user: user)
-      create(:tag_transaction, tag_id: large_income_tag.id, transaction_item_id: large_income.id)
+      let(:tag_list1) { [tag1] }
+      let(:tag_list2) { [tag1, tag2] }
+      let(:tag_list3) { [tag1, tag2, tag3] }
 
-      large_purchase_tag = create(:tag, name: 'large-purchase-tag', user: user)
-      create(:tag_transaction, tag_id: large_purchase_tag.id, transaction_item_id: large_purchase.id)
+      before do
+        # "Purchase" transaction uses only the first tag
+        create(:tag_transaction, tag_id: tag1.id, transaction_item_id: purchase.id)
 
-      tags = [purchase_tag, large_income_tag, large_purchase_tag]
+        # "Large income" transaction uses only two tags
+        create(:tag_transaction, tag_id: tag1.id, transaction_item_id: large_income.id)
+        create(:tag_transaction, tag_id: tag2.id, transaction_item_id: large_income.id)
 
-      result = TransactionItem.fetch_transactions_for(user, tag_names: tags.map(&:name))
+        # "Large purchase" transaction uses all three tags
+        create(:tag_transaction, tag_id: tag1.id, transaction_item_id: large_purchase.id)
+        create(:tag_transaction, tag_id: tag2.id, transaction_item_id: large_purchase.id)
+        create(:tag_transaction, tag_id: tag3.id, transaction_item_id: large_purchase.id)
+      end
 
-      expect(result.count).to eq(3)
-      result.each do |transaction_item|
-        expect([purchase, large_income, large_purchase]).to include(transaction_item)
+      it "fetches all transactions with the following tag names (case 1)" do
+        result = TransactionItem.fetch_transactions_for(user, tag_names: tag_list1.map(&:name))
+
+        expect(result.count).to eq(3)
+        result.each do |transaction_item|
+          expect([purchase, large_income, large_purchase]).to include(transaction_item)
+        end
+      end
+
+      it "fetches all transactions with the following tag names (case 2)" do
+        result = TransactionItem.fetch_transactions_for(user, tag_names: tag_list2.map(&:name))
+
+        expect(result.count).to eq(2)
+        result.each do |transaction_item|
+          expect([large_income, large_purchase]).to include(transaction_item)
+        end
+      end
+
+      it "fetches all transactions with the following tag names (case 3)" do
+        result = TransactionItem.fetch_transactions_for(user, tag_names: tag_list3.map(&:name))
+
+        expect(result.count).to eq(1)
+        expect(result.first).to eq(large_purchase)
       end
     end
 
