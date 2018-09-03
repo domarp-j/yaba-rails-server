@@ -86,20 +86,8 @@ class Tag < ApplicationRecord
                   .where(name: tag_names)
                   .select(:id)
 
-    trans_ids = TagTransaction.where(tag_id: tag_ids)
-                              .pluck(:transaction_item_id)
-
-    user.transaction_items
-        .where(id: trans_ids)
-        .select do |trans|
-          trans.tags.contains_all_ids?(tag_ids)
-        end
-  end
-
-  def self.contains_all_ids?(tag_ids)
-    # Check if current tag collection's IDs contains tag_ids arg as a subarray
-    # TODO: This could be implemented without the need for string conversion
-    pluck(:id).sort.join('-').match(tag_ids.pluck(:id).sort.join('-'))
+    TagTransaction.where(tag_id: tag_ids)
+                  .pluck(:transaction_item_id)
   end
 
   private
