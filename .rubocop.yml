@@ -18,6 +18,9 @@ Metrics/BlockLength:
   Exclude:
     - 'spec/**/*'
 
+Metrics/MethodLength:
+  Max: 12
+
 Style/SymbolArray:
   Exclude:
     - 'Gemfile'

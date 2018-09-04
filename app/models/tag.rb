@@ -81,13 +81,10 @@ class Tag < ApplicationRecord
     user.tags.where('lower(name) = ?', name.downcase)
   end
 
-  def self.get_transaction_ids_for_tags_with_names(tag_names, user)
-    tag_ids = user.tags
-                  .where(name: tag_names)
-                  .select(:id)
-
-    TagTransaction.where(tag_id: tag_ids)
-                  .pluck(:transaction_item_id)
+  def self.ids_for_names(tag_names, user)
+    user.tags
+        .where(name: tag_names)
+        .pluck(:id)
   end
 
   private

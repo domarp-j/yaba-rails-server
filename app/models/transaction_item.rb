@@ -71,27 +71,54 @@ class TransactionItem < ApplicationRecord
       trans
     end
 
-    def filter_by_tag_names!(tag_names)
-      tag_ids = user.tags
-                    .where(name: tag_names)
-                    .select(:id)
-
-      trans_ids = TagTransaction.where(tag_id: tag_ids)
-                                .select(:transaction_item_id)
-
-      where(id: trans_ids)
-    end
-
     private
 
     def matches_filter_criteria(user:, tag_names:)
       query = { user_id: user.id }
 
       return query unless tag_names.present?
-      trans_ids = Tag.get_transaction_ids_for_tags_with_names(tag_names, user)
+      tag_ids = Tag.ids_for_names(tag_names, user)
+      trans_ids = transactions_with_tag_ids(tag_ids)
       query[:id] = trans_ids
 
       query
+    end
+
+    # This method return IDs for transactions that are attached to tags with
+    # the provided IDs.
+    # It ensures that the returned transaction are attached to *all* of the
+    # provided tags rather than *any* tag.
+    def transactions_with_tag_ids(tag_ids)
+      # Get all of the tag-transactions associated with the provided tag_ids
+      # Crucial: Sort by transaction item ID, *then* by tag ID for the next step
+      tag_transactions = TagTransaction.where(tag_id: tag_ids)
+                                       .order(
+                                         transaction_item_id: :asc, tag_id: :asc
+                                       )
+
+      # Keep a running list of transaction IDs
+      transaction_ids = []
+
+      # Iterate through the sorted tag-transactions in batches
+      tag_transactions.each_cons(tag_ids.count) do |tag_trans_batch|
+        # Check if the current batch of tag-transactions has the same order of
+        # tag IDs as a sorted version of the provided tag_ids. Proceed to next
+        # iteration if that is not the case.
+        next unless tag_trans_batch.map(&:tag_id) == tag_ids.sort
+
+        # After the previous check, it is more than likely that a transaction
+        # has been found with all of the required tags. However, we can double
+        # check by making sure the current batch of tag-transactions is all
+        # related to the same transaction.
+        batch_trans_ids = tag_trans_batch.map(&:transaction_item_id)
+        next unless batch_trans_ids.uniq.length == 1
+
+        # By this point, we can be sure that we found a transaction with the
+        # required tags. Add it to the list & proceed.
+        transaction_ids << batch_trans_ids.first
+      end
+
+      transaction_ids
     end
   end
 end
