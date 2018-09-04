@@ -302,4 +302,28 @@ RSpec.describe Tag, type: :model do
       expect(tag.valid?).to be(false)
     end
   end
+
+  describe '.ids_for_names' do
+    let(:tag_names) { %w[test1 test2] }
+    let(:tag_ids) { [12, 15] }
+
+    before do
+      create(:tag, id: tag_ids[0], name: tag_names[0], user: user)
+      create(:tag, id: tag_ids[1], name: tag_names[1], user: user)
+    end
+
+    it 'returns the IDs of tags with the given names' do
+      result = Tag.ids_for_names(tag_names, user)
+
+      expect(result.length).to eq(tag_ids.length)
+      result.each do |id|
+        expect(tag_ids).to include(id)
+      end
+    end
+
+    it 'returns an empty array if tags with the given names are not found' do
+      result = Tag.ids_for_names(['test3'], user)
+      expect(result).to eq([])
+    end
+  end
 end
