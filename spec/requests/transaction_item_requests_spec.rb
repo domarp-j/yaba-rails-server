@@ -83,15 +83,12 @@ RSpec.describe 'transaction items requests:', type: :request do
 
     it 'returns transactions for specific tags if tag_names is provided as a parameter' do
       tag_names = ['some-tag-1', 'some-tag-2']
+      tag1 = create(:tag, name: tag_names[0], user: user)
+      tag2 = create(:tag, name: tag_names[1], user: user)
 
       create_list(:transaction_item, 3, :purchase, user: user).each do |trans|
-        tag = create(:tag, name: tag_names[0], user: user)
-        create(:tag_transaction, tag_id: tag.id, transaction_item_id: trans.id)
-      end
-
-      create_list(:transaction_item, 2, :large_purchase, user: user).each do |trans|
-        tag = create(:tag, name: tag_names[1], user: user)
-        create(:tag_transaction, tag_id: tag.id, transaction_item_id: trans.id)
+        create(:tag_transaction, tag_id: tag1.id, transaction_item_id: trans.id)
+        create(:tag_transaction, tag_id: tag2.id, transaction_item_id: trans.id)
       end
 
       create_list(:transaction_item, 10, :income, user: user)
@@ -100,7 +97,7 @@ RSpec.describe 'transaction items requests:', type: :request do
       body = JSON.parse(response.body)
 
       assert_response_success(response, body)
-      expect(body['content'].length).to eq(5)
+      expect(body['content'].length).to eq(3)
       body['content'].each do |trans_json|
         tag_names_in_response = trans_json['tags'].map { |tag_json| tag_json['name'] }
         tag_names_in_response.each { |tag| expect(tag_names).to include(tag) }

@@ -81,13 +81,10 @@ class Tag < ApplicationRecord
     user.tags.where('lower(name) = ?', name.downcase)
   end
 
-  def self.get_transaction_ids_for(tag_names, user)
-    tag_ids = user.tags
-                  .where(name: tag_names)
-                  .select(:id)
-
-    TagTransaction.where(tag_id: tag_ids)
-                  .pluck(:transaction_item_id)
+  def self.ids_for_names(tag_names, user)
+    user.tags
+        .where(name: tag_names)
+        .pluck(:id)
   end
 
   private
@@ -97,8 +94,8 @@ class Tag < ApplicationRecord
     tag_with_new_name = Tag.find_for(user, name: params[:name])
 
     # If the user already has a tag with the new name
-    # then associate that tag with the transaction
-    # and delete the current tag's relationship with the transaction
+    # then delete the current tag's relationship with the transaction with id "trans_id"
+    # and associate the new tag with that same transaction
     if tag_with_new_name
       remove_from_transaction_with_id(trans_id)
       tag_with_new_name.attach_to_transaction_with_id(trans_id)
@@ -113,7 +110,7 @@ class Tag < ApplicationRecord
       Tag.create_for(user, params).attach_to_transaction_with_id(trans_id)
 
     # If the user does not have a tag with the new name
-    # and the currente tag is only associated with the provided transaction
+    # and the current tag is only associated with the provided transaction
     # then simply update the name of the current tag
     else
       update_with_params(params)
