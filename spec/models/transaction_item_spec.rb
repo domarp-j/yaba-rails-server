@@ -220,6 +220,13 @@ RSpec.describe TransactionItem, type: :model do
         expect(result.count).to eq(1)
         expect(result.first).to eq(large_purchase)
       end
+
+      it 'does not return any transactions if any of the tag names are not mapped to a tag' do
+        bad_tag_name_list = tag_list1.map(&:name) + ['not-a-tag']
+        result = TransactionItem.fetch_transactions_for(user, tag_names: bad_tag_name_list)
+
+        expect(result.count).to eq(0)
+      end
     end
 
     it 'sorts so that most recent transactions are first' do
