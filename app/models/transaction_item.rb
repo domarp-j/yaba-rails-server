@@ -78,6 +78,11 @@ class TransactionItem < ApplicationRecord
 
       return query unless tag_names.present?
       tag_ids = Tag.ids_for_names(tag_names, user)
+      # TODO: Improve how to return 0 transactions if all tag names
+      # do not map to tags
+      unless tag_names.length == tag_ids.length
+        return { created_at: Time.now + 50.years }
+      end
       trans_ids = transactions_with_tag_ids(tag_ids)
       query[:id] = trans_ids
 
