@@ -124,10 +124,21 @@ RSpec.describe 'transaction items requests:', type: :request do
 
       assert_response_failure(response, body)
     end
+
+    it 'does not return a failure if transactions are not returned but page is > 0' do
+      limit = 10
+      create_list(:transaction_item, limit, user: user)
+
+      get transaction_items_path, params: { limit: limit, page: 1 }, headers: devise_request_headers
+      body = JSON.parse(response.body)
+
+      assert_response_success(response, body)
+      expect(body['content']).to eq([])
+    end
   end
 
   context 'adding a new transaction' do
-    it 'succeeds for a valid description, value, and date' do
+    it 'succeeds for a valid description, value, and date ' do
       description = 'Some purchase'
       value = '-12.3'
       date = '2018-07-29'

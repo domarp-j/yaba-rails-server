@@ -4,12 +4,16 @@ class TransactionItemsController < ApplicationController
   def index
     @transactions = TransactionItem.fetch_transactions_for(
       current_user,
-      limit: param_for(:limit, fallback: TransactionItem::DEFAULT_LIMIT),
-      page: param_for(:page, fallback: TransactionItem::FIRST_PAGE),
+      limit: limit_param,
+      page: page_param,
       tag_names: fetch_params[:tag_names]
     )
 
-    @transactions.present? ? successful_fetch(@transactions) : failed_fetch
+    if successful_fetch?(@transactions)
+      successful_fetch_response(@transactions)
+    else
+      failed_fetch_response
+    end
   end
 
   def create
@@ -47,7 +51,19 @@ class TransactionItemsController < ApplicationController
     fetch_params[param_key] ? fetch_params[param_key].to_i : fallback
   end
 
-  def successful_fetch(transactions)
+  def limit_param
+    param_for(:limit, fallback: TransactionItem::DEFAULT_LIMIT)
+  end
+
+  def page_param
+    param_for(:page, fallback: TransactionItem::FIRST_PAGE)
+  end
+
+  def successful_fetch?(transactions)
+    transactions.present? || page_param > 0
+  end
+
+  def successful_fetch_response(transactions)
     result = transactions.map(&:jsonify)
 
     render json: {
@@ -57,7 +73,7 @@ class TransactionItemsController < ApplicationController
     }, status: 200
   end
 
-  def failed_fetch
+  def failed_fetch_response
     render json: {
       message: 'Could not fetch transactions'
     }, status: 400
