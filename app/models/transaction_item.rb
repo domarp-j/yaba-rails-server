@@ -15,7 +15,12 @@ class TransactionItem < ApplicationRecord
       description: description,
       value: value,
       date: date,
-      tags: tags.map(&:jsonify).sort_by { |tag| tag[:name] }
+      tags: TransactionItem
+        .includes(:tag_transactions, :tags)
+        .find(id)
+        .tags
+        .map(&:jsonify)
+        .sort_by { |tag| tag[:name] }
     }
   end
 
@@ -38,13 +43,12 @@ class TransactionItem < ApplicationRecord
       page: FIRST_PAGE,
       tag_names: []
     )
-      transactions = includes(:tags, :tag_transactions)
-                     .where(
-                       matches_filter_criteria(
-                         user: user,
-                         tag_names: tag_names
-                       )
-                     )
+      transactions = where(
+        matches_filter_criteria(
+          user: user,
+          tag_names: tag_names
+        )
+      )
 
       {
         count: transactions.count,

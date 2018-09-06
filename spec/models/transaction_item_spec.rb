@@ -120,8 +120,9 @@ RSpec.describe TransactionItem, type: :model do
 
     it 'returns the total value of the transactions' do
       result = TransactionItem.fetch_transactions_for(user)
+      expected_sum = user.transaction_items.map(&:value).reduce(:+)
 
-      expect(result[:total_amount]).to eq(user.transaction_items.sum(:value))
+      expect(result[:total_amount]).to eq(expected_sum)
     end
 
     it "fetches #{limit_default} transactions by default" do
