@@ -1,9 +1,9 @@
 module ResponseRender
   extend ActiveSupport::Concern
 
-  def response_400(message:, content: nil)
+  def json_response(message:, status:, content: nil)
     json_resp = { message: message }
     json_resp[:content] = content if content
-    render json: json_resp, status: 400
+    render json: json_resp, status: status
   end
 end

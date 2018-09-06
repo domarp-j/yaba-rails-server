@@ -14,7 +14,7 @@ class TransactionItemsController < ApplicationController
     if successful_fetch?(result)
       successful_fetch_response(result)
     else
-      response_400(message: 'Could not fetch transactions')
+      json_response(message: 'Could not fetch transactions', status: 400)
     end
   end
 
@@ -26,9 +26,10 @@ class TransactionItemsController < ApplicationController
     if new_trans.save
       successful_create(new_trans)
     else
-      response_400(
+      json_response(
         message: 'Could not create transaction',
-        content: new_trans.errors.full_messages
+        content: new_trans.errors.full_messages,
+        status: 400
       )
     end
   end
@@ -38,13 +39,15 @@ class TransactionItemsController < ApplicationController
     if trans && trans.save
       successful_update(trans)
     else
-      response_400(message: 'Could not update transaction')
+      json_response(message: 'Could not update transaction', status: 400)
     end
   end
 
   def destroy
     trans = current_user.transaction_items.find_by(id: trans_params[:id])
-    return response_400(message: 'Transaction to delete not found') unless trans
+    unless trans
+      return json_response(message: 'Transaction not found', status: 400)
+    end
     trans_json = trans.jsonify
     trans.destroy_with_tags!
     successful_destroy(trans_json)

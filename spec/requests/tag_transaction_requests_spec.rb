@@ -185,7 +185,7 @@ RSpec.describe 'tag-transaction requests:', type: :request do
       response_body = JSON.parse(response.body)
 
       expect(response.success?).to be(false)
-      expect(response_body['message']).to eq('Could not delete tag from transaction')
+      expect(response_body['message']).to eq('Could not delete tag')
     end
   end
 end
