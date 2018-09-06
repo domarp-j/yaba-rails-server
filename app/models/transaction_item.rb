@@ -38,16 +38,21 @@ class TransactionItem < ApplicationRecord
       page: FIRST_PAGE,
       tag_names: []
     )
-      includes(:tags, :tag_transactions)
-        .where(
-          matches_filter_criteria(
-            user: user,
-            tag_names: tag_names
-          )
-        )
-        .order(date: :desc, created_at: :desc)
-        .limit(limit)
-        .offset(limit * page)
+      transactions = includes(:tags, :tag_transactions)
+                     .where(
+                       matches_filter_criteria(
+                         user: user,
+                         tag_names: tag_names
+                       )
+                     )
+
+      {
+        count: transactions.count,
+        total_amount: transactions.sum(:value).round(2),
+        transactions: transactions.order(date: :desc, created_at: :desc)
+                                  .limit(limit)
+                                  .offset(limit * page)
+      }
     end
 
     def build_transaction_for(user, params)
