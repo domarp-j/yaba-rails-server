@@ -24,12 +24,14 @@ class TransactionItemsController < ApplicationController
     )
 
     if new_trans.save
-      successful_create(new_trans)
+      json_response(
+        message: 'Transaction successfully created', status: 200,
+        content: new_trans.jsonify
+      )
     else
       json_response(
-        message: 'Could not create transaction',
-        content: new_trans.errors.full_messages,
-        status: 400
+        message: 'Could not create transaction', status: 400,
+        content: new_trans.errors.full_messages
       )
     end
   end
@@ -37,7 +39,10 @@ class TransactionItemsController < ApplicationController
   def update
     trans = TransactionItem.update_transaction_for(current_user, trans_params)
     if trans && trans.save
-      successful_update(trans)
+      json_response(
+        message: 'Transaction successfully updated', status: 200,
+        content: trans.jsonify
+      )
     else
       json_response(message: 'Could not update transaction', status: 400)
     end
@@ -50,7 +55,10 @@ class TransactionItemsController < ApplicationController
     end
     trans_json = trans.jsonify
     trans.destroy_with_tags!
-    successful_destroy(trans_json)
+    json_response(
+      message: 'Transaction deleted', status: 200,
+      content: trans_json
+    )
   end
 
   private
@@ -80,34 +88,13 @@ class TransactionItemsController < ApplicationController
   end
 
   def successful_fetch_response(result)
-    render json: {
-      message: 'Transactions successfully fetched',
+    json_response(
+      message: 'Transactions successfully fetched', status: 200,
       content: {
         count: result[:count],
         total_amount: result[:total_amount],
         transactions: result[:transactions].map(&:jsonify)
       }
-    }, status: 200
-  end
-
-  def successful_create(transaction)
-    render json: {
-      message: 'Transaction successfully created',
-      content: transaction.jsonify
-    }, status: 200
-  end
-
-  def successful_update(transaction)
-    render json: {
-      message: 'Transaction successfully updated',
-      content: transaction.jsonify
-    }, status: 200
-  end
-
-  def successful_destroy(transaction_json)
-    render json: {
-      message: 'Transaction successfully deleted',
-      content: transaction_json
-    }, status: 200
+    )
   end
 end
