@@ -15,12 +15,8 @@ class TransactionItem < ApplicationRecord
       description: description,
       value: value,
       date: date,
-      tags: TransactionItem
-        .includes(:tag_transactions, :tags)
-        .find(id)
-        .tags
-        .map(&:jsonify)
-        .sort_by { |tag| tag[:name] }
+      tags: tags.map(&:jsonify)
+                .sort_by { |tag| tag[:name] }
     }
   end
 
@@ -43,16 +39,17 @@ class TransactionItem < ApplicationRecord
       page: FIRST_PAGE,
       tag_names: []
     )
-      transactions = where(
-        matches_filter_criteria(
-          user: user,
-          tag_names: tag_names
-        )
-      )
+      transactions = includes(:tag_transactions, :tags)
+                     .where(
+                       matches_filter_criteria(
+                         user: user,
+                         tag_names: tag_names
+                       )
+                     )
 
       {
         count: transactions.count,
-        total_amount: transactions.sum(:value).round(2),
+        total_amount: calculate_sum(transactions),
         transactions: transactions.order(date: :desc, created_at: :desc)
                                   .limit(limit)
                                   .offset(limit * page)
@@ -77,6 +74,12 @@ class TransactionItem < ApplicationRecord
     end
 
     private
+
+    # Using TransactionItem.includes adds several duplicate transactions that changes the sum.
+    # This method removes those duplicates & gets the sum for a list of *unique* transactions.
+    def calculate_sum(transactions)
+      where(id: transactions.pluck(:id).uniq!).sum(:value).round(2)
+    end
 
     def matches_filter_criteria(user:, tag_names:)
       query = { user_id: user.id }
