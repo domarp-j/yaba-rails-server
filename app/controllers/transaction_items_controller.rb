@@ -1,4 +1,6 @@
 class TransactionItemsController < ApplicationController
+  include ResponseRender
+
   before_action :authenticate_user!
 
   def index
@@ -12,7 +14,7 @@ class TransactionItemsController < ApplicationController
     if successful_fetch?(result)
       successful_fetch_response(result)
     else
-      failed_fetch_response
+      json_response(message: 'Could not fetch transactions', status: 400)
     end
   end
 
@@ -21,20 +23,42 @@ class TransactionItemsController < ApplicationController
       current_user, trans_params
     )
 
-    new_trans.save ? successful_create(new_trans) : failed_create(new_trans)
+    if new_trans.save
+      json_response(
+        message: 'Transaction successfully created', status: 200,
+        content: new_trans.jsonify
+      )
+    else
+      json_response(
+        message: 'Could not create transaction', status: 400,
+        content: new_trans.errors.full_messages
+      )
+    end
   end
 
   def update
     trans = TransactionItem.update_transaction_for(current_user, trans_params)
-    trans && trans.save ? successful_update(trans) : failed_update
+    if trans && trans.save
+      json_response(
+        message: 'Transaction successfully updated', status: 200,
+        content: trans.jsonify
+      )
+    else
+      json_response(message: 'Could not update transaction', status: 400)
+    end
   end
 
   def destroy
     trans = current_user.transaction_items.find_by(id: trans_params[:id])
-    return failed_destroy unless trans
+    unless trans
+      return json_response(message: 'Transaction not found', status: 400)
+    end
     trans_json = trans.jsonify
     trans.destroy_with_tags!
-    successful_destroy(trans_json)
+    json_response(
+      message: 'Transaction deleted', status: 200,
+      content: trans_json
+    )
   end
 
   private
@@ -64,59 +88,13 @@ class TransactionItemsController < ApplicationController
   end
 
   def successful_fetch_response(result)
-    render json: {
-      message: 'Transactions successfully fetched',
+    json_response(
+      message: 'Transactions successfully fetched', status: 200,
       content: {
         count: result[:count],
         total_amount: result[:total_amount],
         transactions: result[:transactions].map(&:jsonify)
       }
-    }, status: 200
-  end
-
-  def failed_fetch_response
-    render json: {
-      message: 'Could not fetch transactions'
-    }, status: 400
-  end
-
-  def successful_create(transaction)
-    render json: {
-      message: 'Transaction successfully created',
-      content: transaction.jsonify
-    }, status: 200
-  end
-
-  def failed_create(transaction)
-    render json: {
-      message: 'Could not create transaction',
-      content: transaction.errors.full_messages
-    }, status: 400
-  end
-
-  def successful_update(transaction)
-    render json: {
-      message: 'Transaction successfully updated',
-      content: transaction.jsonify
-    }, status: 200
-  end
-
-  def failed_update
-    render json: {
-      message: 'Could not update transaction'
-    }, status: 400
-  end
-
-  def successful_destroy(transaction_json)
-    render json: {
-      message: 'Transaction successfully deleted',
-      content: transaction_json
-    }, status: 200
-  end
-
-  def failed_destroy
-    render json: {
-      message: 'Could not delete transaction'
-    }, status: 400
+    )
   end
 end
