@@ -20,7 +20,7 @@ RSpec.describe 'transaction items requests:', type: :request do
       expect(body['message']).to eq('Could not fetch transactions')
     end
 
-    it'returns the total number of transactions' do
+    it 'returns the total number of transactions' do
       total_trans = 50
       create_list(:transaction_item, total_trans, :purchase, user: user)
 
@@ -43,7 +43,7 @@ RSpec.describe 'transaction items requests:', type: :request do
       expect(body['content']['total_amount']).to eq(expected_sum)
     end
 
-    it"returns all of the user's transactions if (s)he has less than #{limit_default} items" do
+    it "returns all of the user's transactions if (s)he has less than #{limit_default} items" do
       create_list(:transaction_item, limit_default - 1, :purchase, user: user)
 
       get transaction_items_path, headers: devise_request_headers
@@ -53,7 +53,7 @@ RSpec.describe 'transaction items requests:', type: :request do
       expect(body['content']['transactions'].length).to eq(limit_default - 1)
     end
 
-    it"returns just #{limit_default} transactions if (s)he has more than #{limit_default} transactions" do
+    it "returns just #{limit_default} transactions if (s)he has more than #{limit_default} transactions" do
       create_list(:transaction_item, limit_default + 1, :purchase, user: user)
 
       get transaction_items_path, headers: devise_request_headers
@@ -63,7 +63,7 @@ RSpec.describe 'transaction items requests:', type: :request do
       expect(body['content']['transactions'].length).to eq(limit_default)
     end
 
-    it'returns a specific number of the user\'s latest transaction items if limitis given as a parameter' do
+    it 'returns a specific number of the user\'s latest transaction items if limit is given as a parameter' do
       create_list(:transaction_item, 10, :purchase, :two_weeks_ago, user: user)
       create_list(:transaction_item, 5, :purchase, :one_week_ago, user: user)
 
@@ -79,7 +79,7 @@ RSpec.describe 'transaction items requests:', type: :request do
       end
     end
 
-    it'returns transactions with an offset if page is given as a parameter' do
+    it 'returns transactions with an offset if page is given as a parameter' do
       create_list(:transaction_item, limit_default, :purchase, :two_weeks_ago, user: user)
       create_list(:transaction_item, limit_default, :purchase, :one_week_ago, user: user)
 
@@ -95,7 +95,7 @@ RSpec.describe 'transaction items requests:', type: :request do
       end
     end
 
-    it'returns transactions with a limitand offset if limit& page are given as parameters' do
+    it 'returns transactions with a limit and offset if limit & page are given as parameters' do
       create_list(:transaction_item, 10, :purchase, :two_weeks_ago, user: user)
       create_list(:transaction_item, 5, :purchase, :one_week_ago, user: user)
 
@@ -108,7 +108,7 @@ RSpec.describe 'transaction items requests:', type: :request do
       expect(Time.parse(transaction['date'])).to be_within(1.hour).of(2.week.ago)
     end
 
-    it'returns transactions for specific tags if tag_names is provided as a parameter' do
+    it 'returns transactions for specific tags if tag_names is provided as a parameter' do
       tag_names = ['some-tag-1', 'some-tag-2']
       tag1 = create(:tag, name: tag_names[0], user: user)
       tag2 = create(:tag, name: tag_names[1], user: user)
@@ -133,7 +133,7 @@ RSpec.describe 'transaction items requests:', type: :request do
       end
     end
 
-    it'does not return transaction items for other users' do
+    it 'does not return transaction items for other users' do
       another_user = create(:user, email: 'test2@example.com')
       create_list(:transaction_item, 5, :large_income, user: another_user)
 
@@ -143,7 +143,7 @@ RSpec.describe 'transaction items requests:', type: :request do
       assert_response_failure(response, body)
     end
 
-    it'returns a failure if no transactions are found' do
+    it 'returns a failure if no transactions are found' do
       another_user = create(:user, email: 'test3@example.com')
 
       sign_in another_user
@@ -154,7 +154,7 @@ RSpec.describe 'transaction items requests:', type: :request do
       assert_response_failure(response, body)
     end
 
-    it'does not return a failure if transactions are not returned but page is > 0' do
+    it 'does not return a failure if transactions are not returned but page is > 0' do
       limit = 10
       create_list(:transaction_item, limit, user: user)
 
@@ -167,7 +167,7 @@ RSpec.describe 'transaction items requests:', type: :request do
   end
 
   context 'adding a new transaction' do
-    it'succeeds for a valid description, value, and date ' do
+    it 'succeeds for a valid description, value, and date ' do
       description = 'Some purchase'
       value = '-12.3'
       date = '2018-07-29'
@@ -203,7 +203,7 @@ RSpec.describe 'transaction items requests:', type: :request do
       create(:transaction_item, id: id, description: description, value: value, date: date, user: user)
     end
 
-    it'succeeds for valid description' do
+    it 'succeeds for valid description' do
       transaction = TransactionItem.find(id)
       expect(transaction.description).to eq(description)
 
@@ -216,7 +216,7 @@ RSpec.describe 'transaction items requests:', type: :request do
       expect(transaction.description).to eq(updated_description)
     end
 
-    it'succeeds for valid value' do
+    it 'succeeds for valid value' do
       transaction = TransactionItem.find(id)
       expect(transaction.value).to eq(value)
 
@@ -229,7 +229,7 @@ RSpec.describe 'transaction items requests:', type: :request do
       expect(transaction.value).to eq(updated_value)
     end
 
-    it'succeeds for valid date' do
+    it 'succeeds for valid date' do
       transaction = TransactionItem.find(id)
       expect(transaction.date).to eq(date)
 
@@ -242,7 +242,7 @@ RSpec.describe 'transaction items requests:', type: :request do
       expect(transaction.date).to eq(Time.parse(updated_date))
     end
 
-    it'succeeds for a successful description, value, and date together' do
+    it 'succeeds for a successful description, value, and date together' do
       transaction = TransactionItem.find(id)
       expect(transaction.description).to eq(description)
       expect(transaction.value).to eq(value)
@@ -268,7 +268,7 @@ RSpec.describe 'transaction items requests:', type: :request do
     let(:value) { -10.3 }
     let(:date) { Time.parse('March 17 2018') }
 
-    it'succeeds for valid description, value, and date params' do
+    it 'succeeds for valid description, value, and date params' do
       create(:transaction_item, id: id, description: description, value: value, date: date, user: user)
 
       post delete_transaction_item_path,
@@ -286,7 +286,7 @@ RSpec.describe 'transaction items requests:', type: :request do
       expect(transaction).to be_nil
     end
 
-    it'deletes only one transaction if multiple with the same description, value, and date' do
+    it 'deletes only one transaction if multiple with the same description, value, and date' do
       initial_count = 3
 
       transaction_to_delete = create_list(
@@ -312,7 +312,7 @@ RSpec.describe 'transaction items requests:', type: :request do
       expect(transactions.length).to eq(initial_count - 1)
     end
 
-    it'does not delete transaction items of other users' do
+    it 'does not delete transaction items of other users' do
       another_user = create(:user, email: 'test2@example.com')
 
       create(:transaction_item, description: description, value: value, date: date, user: user)

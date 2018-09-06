@@ -78,7 +78,7 @@ class TransactionItem < ApplicationRecord
     # Using TransactionItem.includes adds several duplicate transactions that changes the sum.
     # This method removes those duplicates & gets the sum for a list of *unique* transactions.
     def calculate_sum(transactions)
-      where(id: transactions.pluck(:id).uniq!).sum(:value).round(2)
+      where(id: transactions.pluck(:id).uniq).sum(:value).round(2)
     end
 
     def matches_filter_criteria(user:, tag_names:)
