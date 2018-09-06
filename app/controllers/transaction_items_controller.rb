@@ -2,15 +2,15 @@ class TransactionItemsController < ApplicationController
   before_action :authenticate_user!
 
   def index
-    @transactions = TransactionItem.fetch_transactions_for(
+    result = TransactionItem.fetch_transactions_for(
       current_user,
       limit: limit_param,
       page: page_param,
       tag_names: fetch_params[:tag_names]
     )
 
-    if successful_fetch?(@transactions)
-      successful_fetch_response(@transactions)
+    if successful_fetch?(result)
+      successful_fetch_response(result)
     else
       failed_fetch_response
     end
@@ -59,17 +59,18 @@ class TransactionItemsController < ApplicationController
     param_for(:page, fallback: TransactionItem::FIRST_PAGE)
   end
 
-  def successful_fetch?(transactions)
-    transactions.present? || page_param > 0
+  def successful_fetch?(result)
+    result[:count] > 0 || page_param > 0
   end
 
-  def successful_fetch_response(transactions)
-    result = transactions.map(&:jsonify)
-
+  def successful_fetch_response(result)
     render json: {
       message: 'Transactions successfully fetched',
-      content: result,
-      limit: result.length
+      content: {
+        count: result[:count],
+        total_amount: result[:total_amount],
+        transactions: result[:transactions].map(&:jsonify)
+      }
     }, status: 200
   end
 

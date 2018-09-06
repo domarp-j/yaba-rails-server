@@ -112,16 +112,29 @@ RSpec.describe TransactionItem, type: :model do
     let!(:large_income) { create(:transaction_item, :large_income, user: user, date: 2.days.ago) }
     let!(:large_purchase) { create(:transaction_item, :large_purchase, user: user, date: 1.days.ago) }
 
+    it 'returns the number of transactions' do
+      result = TransactionItem.fetch_transactions_for(user)
+
+      expect(result[:count]).to eq(user.transaction_items.count)
+    end
+
+    it 'returns the total value of the transactions' do
+      result = TransactionItem.fetch_transactions_for(user)
+      expected_sum = user.transaction_items.map(&:value).reduce(:+)
+
+      expect(result[:total_amount]).to eq(expected_sum)
+    end
+
     it "fetches #{limit_default} transactions by default" do
       result = TransactionItem.fetch_transactions_for(user)
 
-      expect(result.count).to eq(limit_default)
+      expect(result[:transactions].length).to eq(limit_default)
     end
 
     it "fetches a user's transactions starting at index #{page_default} by default" do
       result = TransactionItem.fetch_transactions_for(user)
 
-      expect(result[0].date).to be_within(1.hour).of(1.days.ago)
+      expect(result[:transactions][0].date).to be_within(1.hour).of(1.days.ago)
     end
 
     it 'fetches a custom number of transactions if a limit is provided' do
@@ -129,7 +142,7 @@ RSpec.describe TransactionItem, type: :model do
 
       result = TransactionItem.fetch_transactions_for(user, limit: limit)
 
-      expect(result.count).to eq(limit)
+      expect(result[:transactions].length).to eq(limit)
     end
 
     it 'fetches transactions with an offset if a page number is provided' do
@@ -137,7 +150,7 @@ RSpec.describe TransactionItem, type: :model do
 
       result = TransactionItem.fetch_transactions_for(user, page: page)
 
-      expect(result[0].date).to be_within(1.hour).of(1.weeks.ago)
+      expect(result[:transactions][0].date).to be_within(1.hour).of(1.weeks.ago)
     end
 
     it 'fetches transactions with a limit and an offset if both are provided' do
@@ -146,8 +159,8 @@ RSpec.describe TransactionItem, type: :model do
 
       result = TransactionItem.fetch_transactions_for(user, limit: limit, page: page)
 
-      expect(result.count).to eq(limit)
-      result.each do |transaction_item|
+      expect(result[:transactions].length).to eq(limit)
+      result[:transactions].each do |transaction_item|
         expect(transaction_item.date).to be_within(1.hour).of(1.weeks.ago)
       end
     end
@@ -159,7 +172,7 @@ RSpec.describe TransactionItem, type: :model do
 
       result = TransactionItem.fetch_transactions_for(user)
 
-      expect(result[0..2]).to eq([trans1, trans2, trans3])
+      expect(result[:transactions][0..2]).to eq([trans1, trans2, trans3])
     end
 
     it 'does not remove duplicate transaction items over multiple fetches in sequence' do
@@ -167,7 +180,11 @@ RSpec.describe TransactionItem, type: :model do
       result2 = TransactionItem.fetch_transactions_for(user, limit: 3, page: 1)
       result3 = TransactionItem.fetch_transactions_for(user, limit: 3, page: 2)
 
-      trans_ids = [result1, result2, result3].flatten.pluck(:id)
+      trans_ids = [
+        result1[:transactions],
+        result2[:transactions],
+        result3[:transactions]
+      ].flatten.pluck(:id)
       uniq_trans_ids = trans_ids.uniq
 
       expect(trans_ids).to eq(uniq_trans_ids), 'Duplicate transactions were returned over sequential fetches'
@@ -199,8 +216,8 @@ RSpec.describe TransactionItem, type: :model do
       it 'fetches all transactions with the following tag names (case 1)' do
         result = TransactionItem.fetch_transactions_for(user, tag_names: tag_list1.map(&:name))
 
-        expect(result.count).to eq(3)
-        result.each do |transaction_item|
+        expect(result[:transactions].length).to eq(3)
+        result[:transactions].each do |transaction_item|
           expect([purchase, large_income, large_purchase]).to include(transaction_item)
         end
       end
@@ -208,8 +225,8 @@ RSpec.describe TransactionItem, type: :model do
       it 'fetches all transactions with the following tag names (case 2)' do
         result = TransactionItem.fetch_transactions_for(user, tag_names: tag_list2.map(&:name))
 
-        expect(result.count).to eq(2)
-        result.each do |transaction_item|
+        expect(result[:transactions].count).to eq(2)
+        result[:transactions].each do |transaction_item|
           expect([large_income, large_purchase]).to include(transaction_item)
         end
       end
@@ -217,26 +234,28 @@ RSpec.describe TransactionItem, type: :model do
       it 'fetches all transactions with the following tag names (case 3)' do
         result = TransactionItem.fetch_transactions_for(user, tag_names: tag_list3.map(&:name))
 
-        expect(result.count).to eq(1)
-        expect(result.first).to eq(large_purchase)
+        expect(result[:transactions].length).to eq(1)
+        expect(result[:transactions].first).to eq(large_purchase)
       end
 
       it 'does not return any transactions if any of the tag names are not mapped to a tag' do
         bad_tag_name_list = tag_list1.map(&:name) + ['not-a-tag']
         result = TransactionItem.fetch_transactions_for(user, tag_names: bad_tag_name_list)
 
-        expect(result.count).to eq(0)
+        expect(result[:transactions].length).to eq(0)
       end
     end
 
     it 'sorts so that most recent transactions are first' do
       result = TransactionItem.fetch_transactions_for(user, limit: TransactionItem.count)
 
-      expect(result[0].date).to be_within(1.hour).of(1.days.ago)
-      expect(result[1].date).to be_within(1.hour).of(2.days.ago)
-      expect(result[2].date).to be_within(1.hour).of(3.days.ago)
-      expect(result[3].date).to be_within(1.hour).of(1.weeks.ago)
-      expect(result.last.date).to be_within(1.hour).of(3.weeks.ago)
+      transactions = result[:transactions]
+
+      expect(transactions[0].date).to be_within(1.hour).of(1.days.ago)
+      expect(transactions[1].date).to be_within(1.hour).of(2.days.ago)
+      expect(transactions[2].date).to be_within(1.hour).of(3.days.ago)
+      expect(transactions[3].date).to be_within(1.hour).of(1.weeks.ago)
+      expect(transactions.last.date).to be_within(1.hour).of(3.weeks.ago)
     end
   end
 

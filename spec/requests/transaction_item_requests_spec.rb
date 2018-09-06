@@ -20,6 +20,29 @@ RSpec.describe 'transaction items requests:', type: :request do
       expect(body['message']).to eq('Could not fetch transactions')
     end
 
+    it 'returns the total number of transactions' do
+      total_trans = 50
+      create_list(:transaction_item, total_trans, :purchase, user: user)
+
+      get transaction_items_path, headers: devise_request_headers
+      body = JSON.parse(response.body)
+
+      assert_response_success(response, body)
+      expect(body['content']['count']).to eq(total_trans)
+    end
+
+    it 'returns the total amount of the transactions' do
+      create_list(:transaction_item, 10, :purchase, user: user)
+
+      get transaction_items_path, headers: devise_request_headers
+      body = JSON.parse(response.body)
+
+      expected_sum = user.transaction_items.map(&:value).reduce(:+)
+
+      assert_response_success(response, body)
+      expect(body['content']['total_amount']).to eq(expected_sum)
+    end
+
     it "returns all of the user's transactions if (s)he has less than #{limit_default} items" do
       create_list(:transaction_item, limit_default - 1, :purchase, user: user)
 
@@ -27,7 +50,7 @@ RSpec.describe 'transaction items requests:', type: :request do
       body = JSON.parse(response.body)
 
       assert_response_success(response, body)
-      expect(body['content'].length).to eq(limit_default - 1)
+      expect(body['content']['transactions'].length).to eq(limit_default - 1)
     end
 
     it "returns just #{limit_default} transactions if (s)he has more than #{limit_default} transactions" do
@@ -37,7 +60,7 @@ RSpec.describe 'transaction items requests:', type: :request do
       body = JSON.parse(response.body)
 
       assert_response_success(response, body)
-      expect(body['content'].length).to eq(limit_default)
+      expect(body['content']['transactions'].length).to eq(limit_default)
     end
 
     it 'returns a specific number of the user\'s latest transaction items if limit is given as a parameter' do
@@ -47,9 +70,11 @@ RSpec.describe 'transaction items requests:', type: :request do
       get transaction_items_path, params: { limit: 5 }, headers: devise_request_headers
       body = JSON.parse(response.body)
 
+      transactions = body['content']['transactions']
+
       assert_response_success(response, body)
-      expect(body['content'].length).to eq(5)
-      body['content'].each do |transaction|
+      expect(transactions.length).to eq(5)
+      transactions.each do |transaction|
         expect(Time.parse(transaction['date'])).to be_within(1.hour).of(1.week.ago)
       end
     end
@@ -61,9 +86,11 @@ RSpec.describe 'transaction items requests:', type: :request do
       get transaction_items_path, params: { page: 1 }, headers: devise_request_headers
       body = JSON.parse(response.body)
 
+      transactions = body['content']['transactions']
+
       assert_response_success(response, body)
-      expect(body['content'].length).to eq(limit_default)
-      body['content'].each do |transaction|
+      expect(transactions.length).to eq(limit_default)
+      transactions.each do |transaction|
         expect(Time.parse(transaction['date'])).to be_within(1.hour).of(2.week.ago)
       end
     end
@@ -77,7 +104,7 @@ RSpec.describe 'transaction items requests:', type: :request do
 
       assert_response_success(response, body)
 
-      transaction = body['content'][0]
+      transaction = body['content']['transactions'][0]
       expect(Time.parse(transaction['date'])).to be_within(1.hour).of(2.week.ago)
     end
 
@@ -96,9 +123,11 @@ RSpec.describe 'transaction items requests:', type: :request do
       get transaction_items_path, params: { tag_names: tag_names }, headers: devise_request_headers
       body = JSON.parse(response.body)
 
+      transactions = body['content']['transactions']
+
       assert_response_success(response, body)
-      expect(body['content'].length).to eq(3)
-      body['content'].each do |trans_json|
+      expect(transactions.length).to eq(3)
+      transactions.each do |trans_json|
         tag_names_in_response = trans_json['tags'].map { |tag_json| tag_json['name'] }
         tag_names_in_response.each { |tag| expect(tag_names).to include(tag) }
       end
@@ -133,7 +162,7 @@ RSpec.describe 'transaction items requests:', type: :request do
       body = JSON.parse(response.body)
 
       assert_response_success(response, body)
-      expect(body['content']).to eq([])
+      expect(body['content']['transactions']).to eq([])
     end
   end
 
