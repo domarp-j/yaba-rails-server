@@ -12,7 +12,7 @@ class TransactionItemsController < ApplicationController
     if successful_fetch?(result)
       successful_fetch_response(result)
     else
-      failed_fetch_response
+      failed_response(message: 'Could not fetch transactions')
     end
   end
 
@@ -21,17 +21,30 @@ class TransactionItemsController < ApplicationController
       current_user, trans_params
     )
 
-    new_trans.save ? successful_create(new_trans) : failed_create(new_trans)
+    if new_trans.save
+      successful_create(new_trans)
+    else
+      failed_response(
+        message: 'Could not create transaction',
+        content: new_trans.errors.full_messages
+      )
+    end
   end
 
   def update
     trans = TransactionItem.update_transaction_for(current_user, trans_params)
-    trans && trans.save ? successful_update(trans) : failed_update
+    if trans && trans.save
+      successful_update(trans)
+    else
+      failed_response(message: 'Could not update transaction')
+    end
   end
 
   def destroy
     trans = current_user.transaction_items.find_by(id: trans_params[:id])
-    return failed_destroy unless trans
+    unless trans
+      return failed_response(message: 'Transaction to delete not found')
+    end
     trans_json = trans.jsonify
     trans.destroy_with_tags!
     successful_destroy(trans_json)
@@ -74,24 +87,11 @@ class TransactionItemsController < ApplicationController
     }, status: 200
   end
 
-  def failed_fetch_response
-    render json: {
-      message: 'Could not fetch transactions'
-    }, status: 400
-  end
-
   def successful_create(transaction)
     render json: {
       message: 'Transaction successfully created',
       content: transaction.jsonify
     }, status: 200
-  end
-
-  def failed_create(transaction)
-    render json: {
-      message: 'Could not create transaction',
-      content: transaction.errors.full_messages
-    }, status: 400
   end
 
   def successful_update(transaction)
@@ -101,12 +101,6 @@ class TransactionItemsController < ApplicationController
     }, status: 200
   end
 
-  def failed_update
-    render json: {
-      message: 'Could not update transaction'
-    }, status: 400
-  end
-
   def successful_destroy(transaction_json)
     render json: {
       message: 'Transaction successfully deleted',
@@ -114,9 +108,9 @@ class TransactionItemsController < ApplicationController
     }, status: 200
   end
 
-  def failed_destroy
-    render json: {
-      message: 'Could not delete transaction'
-    }, status: 400
+  def failed_response(message:, content: nil)
+    json_resp = { message: message }
+    json_resp[:content] = content if content
+    render json: json_resp, status: 400
   end
 end

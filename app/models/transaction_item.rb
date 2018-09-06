@@ -72,11 +72,7 @@ class TransactionItem < ApplicationRecord
       return unless trans
       trans.update(description: params[:description]) if params[:description]
       trans.update(value: params[:value].to_f) if params[:value]
-      if params[:date]
-        trans.update(
-          date: Time.parse(params[:date])
-        )
-      end
+      trans.update(date: Time.parse(params[:date])) if params[:date]
       trans
     end
 
@@ -89,9 +85,7 @@ class TransactionItem < ApplicationRecord
       tag_ids = Tag.ids_for_names(tag_names, user)
       # TODO: Improve how to return 0 transactions if all tag names
       # do not map to tags
-      unless tag_names.length == tag_ids.length
-        return { created_at: Time.now + 50.years }
-      end
+      return no_transactions_query unless tag_names.length == tag_ids.length
       trans_ids = transactions_with_tag_ids(tag_ids)
       query[:id] = trans_ids
 
@@ -133,6 +127,10 @@ class TransactionItem < ApplicationRecord
       end
 
       transaction_ids
+    end
+
+    def no_transactions_query
+      { created_at: Time.now + 50.years }
     end
   end
 end
