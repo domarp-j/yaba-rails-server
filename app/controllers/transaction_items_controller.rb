@@ -1,4 +1,6 @@
 class TransactionItemsController < ApplicationController
+  include ResponseRender
+
   before_action :authenticate_user!
 
   def index
@@ -12,7 +14,7 @@ class TransactionItemsController < ApplicationController
     if successful_fetch?(result)
       successful_fetch_response(result)
     else
-      failed_response(message: 'Could not fetch transactions')
+      response_400(message: 'Could not fetch transactions')
     end
   end
 
@@ -24,7 +26,7 @@ class TransactionItemsController < ApplicationController
     if new_trans.save
       successful_create(new_trans)
     else
-      failed_response(
+      response_400(
         message: 'Could not create transaction',
         content: new_trans.errors.full_messages
       )
@@ -36,15 +38,13 @@ class TransactionItemsController < ApplicationController
     if trans && trans.save
       successful_update(trans)
     else
-      failed_response(message: 'Could not update transaction')
+      response_400(message: 'Could not update transaction')
     end
   end
 
   def destroy
     trans = current_user.transaction_items.find_by(id: trans_params[:id])
-    unless trans
-      return failed_response(message: 'Transaction to delete not found')
-    end
+    return response_400(message: 'Transaction to delete not found') unless trans
     trans_json = trans.jsonify
     trans.destroy_with_tags!
     successful_destroy(trans_json)
@@ -106,11 +106,5 @@ class TransactionItemsController < ApplicationController
       message: 'Transaction successfully deleted',
       content: transaction_json
     }, status: 200
-  end
-
-  def failed_response(message:, content: nil)
-    json_resp = { message: message }
-    json_resp[:content] = content if content
-    render json: json_resp, status: 400
   end
 end

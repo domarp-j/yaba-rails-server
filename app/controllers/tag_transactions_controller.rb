@@ -1,10 +1,14 @@
 class TagTransactionsController < ApplicationController
-  before_action :authenticate_user!
   # TODO: Render a 404 response is transaction ID is not given as param
-  # TODO: Improve error messages
+
+  include ResponseRender
+
+  before_action :authenticate_user!
 
   def create
-    return failed_create if transaction_has_tag_with_given_name?
+    if transaction_has_tag_with_given_name?
+      return response_400(message: 'Transaction already has tag')
+    end
 
     tag = Tag.find_or_create_for(current_user, tag_params)
              .attach_to_transaction_with_id(trans_id)
@@ -12,13 +16,13 @@ class TagTransactionsController < ApplicationController
     if tag.valid? && tag.attached_to_transaction?(trans_id)
       successful_create(tag)
     else
-      failed_create
+      response_400(message: 'Could not create tag')
     end
   end
 
   def update
     tag = Tag.find_for(current_user, tag_params)
-    return failed_update unless tag
+    return response_400(message: 'Could not find tag to update') unless tag
 
     new_or_updated_tag = tag.create_or_update_for_transaction_with_id(
       trans_id,
@@ -26,7 +30,11 @@ class TagTransactionsController < ApplicationController
       tag_params
     )
 
-    new_or_updated_tag ? successful_update(new_or_updated_tag) : failed_update
+    if new_or_updated_tag
+      successful_update(new_or_updated_tag)
+    else
+      response_400(message: 'Failed to update tag')
+    end
   end
 
   def destroy
@@ -36,7 +44,7 @@ class TagTransactionsController < ApplicationController
       tag.remove_from_transaction_with_id(trans_id)
       successful_destroy(tag)
     else
-      failed_destroy
+      response_400(message: 'Could not delete tag from transaction')
     end
   end
 
@@ -68,12 +76,6 @@ class TagTransactionsController < ApplicationController
     }, status: 200
   end
 
-  def failed_create
-    render json: {
-      message: 'Could not create tag'
-    }, status: 400
-  end
-
   def successful_update(tag)
     render json: {
       message: 'Tag successfully updated for transaction',
@@ -81,22 +83,10 @@ class TagTransactionsController < ApplicationController
     }, status: 200
   end
 
-  def failed_update
-    render json: {
-      message: 'Could not update tag'
-    }, status: 400
-  end
-
   def successful_destroy(tag)
     render json: {
       message: 'Tag successfully deleted from transaction',
       content: tag_json(tag)
     }, status: 200
-  end
-
-  def failed_destroy
-    render json: {
-      message: 'Could not delete tag from transaction'
-    }, status: 400
   end
 end

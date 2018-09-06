@@ -92,8 +92,7 @@ RSpec.describe 'tag-transaction requests:', type: :request do
       # content = response_body['content']
 
       expect(response.success?).to be(false)
-      expect(message).to eq('Could not create tag')
-      # expect(content[0]).to match('Tag already exists for that transaction')
+      expect(message).to eq('Transaction already has tag')
     end
   end
 
@@ -133,7 +132,7 @@ RSpec.describe 'tag-transaction requests:', type: :request do
       response_body = JSON.parse(response.body)
 
       expect(response.success?).to be(false)
-      expect(response_body['message']).to eq('Could not update tag')
+      expect(response_body['message']).to eq('Failed to update tag')
     end
 
     it 'returns a failure if the tag is not found' do
@@ -144,7 +143,7 @@ RSpec.describe 'tag-transaction requests:', type: :request do
       response_body = JSON.parse(response.body)
 
       expect(response.success?).to be(false)
-      expect(response_body['message']).to eq('Could not update tag')
+      expect(response_body['message']).to eq('Could not find tag to update')
     end
   end
 
