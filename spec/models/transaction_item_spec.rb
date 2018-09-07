@@ -203,30 +203,30 @@ RSpec.describe TransactionItem, type: :model do
     end
 
     context 'with tag names' do
+      let(:tag0) { create(:tag, name: 'tag0', user: user) }
       let(:tag1) { create(:tag, name: 'tag1', user: user) }
       let(:tag2) { create(:tag, name: 'tag2', user: user) }
-      let(:tag3) { create(:tag, name: 'tag3', user: user) }
 
-      let(:tag_list1) { [tag1] }
-      let(:tag_list2) { [tag1, tag2] }
-      let(:tag_list3) { [tag1, tag2, tag3] }
+      let(:tag_list0) { [tag0] }
+      let(:tag_list1) { [tag0, tag1] }
+      let(:tag_list2) { [tag0, tag1, tag2] }
 
       before do
         # "Purchase" transaction uses only the first tag
-        create(:tag_transaction, tag_id: tag1.id, transaction_item_id: purchase.id)
+        create(:tag_transaction, tag_id: tag0.id, transaction_item_id: purchase.id)
 
         # "Large income" transaction uses only two tags
+        create(:tag_transaction, tag_id: tag0.id, transaction_item_id: large_income.id)
         create(:tag_transaction, tag_id: tag1.id, transaction_item_id: large_income.id)
-        create(:tag_transaction, tag_id: tag2.id, transaction_item_id: large_income.id)
 
         # "Large purchase" transaction uses all three tags
+        create(:tag_transaction, tag_id: tag0.id, transaction_item_id: large_purchase.id)
         create(:tag_transaction, tag_id: tag1.id, transaction_item_id: large_purchase.id)
         create(:tag_transaction, tag_id: tag2.id, transaction_item_id: large_purchase.id)
-        create(:tag_transaction, tag_id: tag3.id, transaction_item_id: large_purchase.id)
       end
 
       it 'fetches all transactions with the following tag names (case 1)' do
-        result = TransactionItem.fetch_transactions_for(user, tag_names: tag_list1.map(&:name))
+        result = TransactionItem.fetch_transactions_for(user, tag_names: tag_list0.map(&:name))
 
         expect(result[:transactions].length).to eq(3)
         result[:transactions].each do |transaction_item|
@@ -235,7 +235,7 @@ RSpec.describe TransactionItem, type: :model do
       end
 
       it 'fetches all transactions with the following tag names (case 2)' do
-        result = TransactionItem.fetch_transactions_for(user, tag_names: tag_list2.map(&:name))
+        result = TransactionItem.fetch_transactions_for(user, tag_names: tag_list1.map(&:name))
 
         expect(result[:transactions].count).to eq(2)
         result[:transactions].each do |transaction_item|
@@ -244,14 +244,14 @@ RSpec.describe TransactionItem, type: :model do
       end
 
       it 'fetches all transactions with the following tag names (case 3)' do
-        result = TransactionItem.fetch_transactions_for(user, tag_names: tag_list3.map(&:name))
+        result = TransactionItem.fetch_transactions_for(user, tag_names: tag_list2.map(&:name))
 
         expect(result[:transactions].length).to eq(1)
         expect(result[:transactions].first).to eq(large_purchase)
       end
 
       it 'does not return any transactions if any of the tag names are not mapped to a tag' do
-        bad_tag_name_list = tag_list1.map(&:name) + ['not-a-tag']
+        bad_tag_name_list = tag_list0.map(&:name) + ['not-a-tag']
         result = TransactionItem.fetch_transactions_for(user, tag_names: bad_tag_name_list)
 
         expect(result[:transactions].length).to eq(0)
@@ -273,8 +273,8 @@ RSpec.describe TransactionItem, type: :model do
       end
 
       it 'fetches transactions for a given date range' do
-        from_date = Time.parse("January #{day_range.first} 2000")
-        to_date = Time.parse("January #{day_range.last} 2000")
+        from_date = "2000-01-0#{day_range.first}"
+        to_date = "2000-01-0#{day_range.last}"
 
         result = TransactionItem.fetch_transactions_for(user, from_date: from_date, to_date: to_date)
 
@@ -284,7 +284,7 @@ RSpec.describe TransactionItem, type: :model do
       end
 
       it 'fetches transactions from a provided from_date even if to_date is not present' do
-        from_date = Time.parse("January #{day_range.first} 2000")
+        from_date = "2000-01-0#{day_range.first}"
 
         result = TransactionItem.fetch_transactions_for(user, from_date: from_date)
 
@@ -296,7 +296,7 @@ RSpec.describe TransactionItem, type: :model do
       end
 
       it 'fetches transactions from a provided from_date even if to_date is not present' do
-        to_date = Time.parse("January #{day_range.last} 2000")
+        to_date = "2000-01-0#{day_range.last}"
 
         result = TransactionItem.fetch_transactions_for(user, to_date: to_date)
 
@@ -305,6 +305,51 @@ RSpec.describe TransactionItem, type: :model do
         expect(result[:transactions].length).to eq(day_range.sum)
         expect(result[:transactions].first.date).to eq(to_date)
         expect(result[:transactions].last.date).to eq(earliest_trans.date)
+      end
+    end
+
+    context 'all possible queries' do
+      let(:tag0) { create(:tag, name: 'tag0', user: user) }
+      let(:tag1) { create(:tag, name: 'tag1', user: user) }
+      let(:tag2) { create(:tag, name: 'tag2', user: user) }
+
+      # All of the transactions that are expected from the test
+      let(:trans0) { create(:transaction_item, date: Time.parse('August 15 2018'), user: user) }
+      let(:trans1) { create(:transaction_item, date: Time.parse('September 30 2018'), user: user) }
+      let(:trans2) { create(:transaction_item, date: Time.parse('October 7 2018'), user: user) }
+      let(:trans3) { create(:transaction_item, date: Time.parse('October 31 2018'), user: user) }
+      let(:trans4) { create(:transaction_item, date: Time.parse('November 20 2018'), user: user) }
+      let(:trans5) { create(:transaction_item, date: Time.parse('November 28 2018'), user: user) }
+
+      before do
+        # Give the transactions above the tags that will be used for the query
+        [trans0, trans1, trans2, trans3, trans4, trans5].each do |trans|
+          create(:tag_transaction, tag_id: tag0.id, transaction_item_id: trans.id)
+          create(:tag_transaction, tag_id: tag1.id, transaction_item_id: trans.id)
+        end
+
+        # Add some transactions with one tag that will *not* be used for the query
+        create_list(:transaction_item, 5, date: Time.parse('October 1 2018'), user: user).each do |trans|
+          create(:tag_transaction, tag_id: tag0.id, transaction_item_id: trans.id)
+          create(:tag_transaction, tag_id: tag2.id, transaction_item_id: trans.id)
+        end
+
+        # Some transactions out of the date range
+        create(:transaction_item, date: Time.parse('July 1 2018'), user: user)
+        create(:transaction_item, date: Time.parse('August 3 2018'), user: user)
+        create(:transaction_item, date: Time.parse('December 15 2018'), user: user)
+        create(:transaction_item, date: Time.parse('January 11 2019'), user: user)
+      end
+
+      it 'fetches the correct transactions' do
+        result = TransactionItem.fetch_transactions_for(
+          user,
+          tag_names: [tag0, tag1].map(&:name),
+          from_date: '2018-08-14',
+          to_date: '2018-11-28'
+        )
+
+        expect(result[:transactions].length).to eq(6)
       end
     end
   end
