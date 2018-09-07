@@ -95,18 +95,19 @@ class TransactionItem < ApplicationRecord
     def matches_filter_criteria(user:, tag_names:, date_range:)
       query = { user_id: user.id }
 
-      return query unless tag_names.present?
-      tag_ids = Tag.ids_for_names(tag_names, user)
-      return no_transactions_query unless tag_names.length == tag_ids.length
-      trans_ids = transactions_with_tag_ids(tag_ids)
-      query[:id] = trans_ids
+      if tag_names.present?
+        tag_ids = Tag.ids_for_names(tag_names, user)
+        return no_transactions_query unless tag_names.length == tag_ids.length
+        trans_ids = transactions_with_tag_ids(tag_ids)
+        query[:id] = trans_ids
+      end
 
       query[:date] = date_range[:from_date]..date_range[:to_date]
 
       query
     end
 
-    # This method return IDs for transactions that are attached to tags with
+    # This method return IDs for t    ransactions that are attached to tags with
     # the provided IDs.
     # It ensures that the returned transaction are attached to *all* of the
     # provided tags rather than *any* tag.

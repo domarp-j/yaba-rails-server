@@ -246,6 +246,56 @@ RSpec.describe TransactionItem, type: :model do
       end
     end
 
+    context 'with date range' do
+      let(:first_day) { 1 }
+      let(:last_day) { 5 }
+
+      let(:day_range) { first_day..last_day }
+
+      before do
+        TransactionItem.destroy_all
+
+        (first_day..last_day).each do |x|
+          create_list(:transaction_item, x, date: Time.parse("January #{x} 2000"), user: user)
+        end
+      end
+
+      it 'fetches transactions for a given date range' do
+        from_date = Time.parse("January #{day_range.first} 2000")
+        to_date = Time.parse("January #{day_range.last} 2000")
+
+        result = TransactionItem.fetch_transactions_for(user, from_date: from_date, to_date: to_date)
+
+        expect(result[:transactions].length).to eq(day_range.sum)
+        expect(result[:transactions].first.date).to eq(to_date)
+        expect(result[:transactions].last.date).to eq(from_date)
+      end
+
+      it 'fetches transactions from a provided from_date even if to_date is not present' do
+        from_date = Time.parse("January #{day_range.first} 2000")
+
+        result = TransactionItem.fetch_transactions_for(user, from_date: from_date)
+
+        latest_trans = TransactionItem.all.order(date: :asc).last
+
+        expect(result[:transactions].length).to eq(day_range.sum)
+        expect(result[:transactions].first.date).to eq(latest_trans.date)
+        expect(result[:transactions].last.date).to eq(from_date)
+      end
+
+      it 'fetches transactions from a provided from_date even if to_date is not present' do
+        to_date = Time.parse("January #{day_range.last} 2000")
+
+        result = TransactionItem.fetch_transactions_for(user, to_date: to_date)
+
+        earliest_trans = TransactionItem.all.order(date: :asc).first
+
+        expect(result[:transactions].length).to eq(day_range.sum)
+        expect(result[:transactions].first.date).to eq(to_date)
+        expect(result[:transactions].last.date).to eq(earliest_trans.date)
+      end
+    end
+
     it 'sorts so that most recent transactions are first' do
       result = TransactionItem.fetch_transactions_for(user, limit: TransactionItem.count)
 
