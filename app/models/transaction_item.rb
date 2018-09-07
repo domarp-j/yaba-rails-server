@@ -37,15 +37,15 @@ class TransactionItem < ApplicationRecord
       user,
       limit: DEFAULT_LIMIT,
       page: FIRST_PAGE,
-      tag_names: []
+      tag_names: [],
+      from_date: Time.parse('1970-01-01'),
+      to_date: Time.now
     )
-      transactions = includes(:tag_transactions, :tags)
-                     .where(
-                       matches_filter_criteria(
-                         user: user,
-                         tag_names: tag_names
-                       )
-                     )
+      transactions = all_transactions_for(
+        user,
+        tag_names: tag_names,
+        from_date: from_date, to_date: to_date
+      )
 
       {
         count: transactions.count,
@@ -81,16 +81,27 @@ class TransactionItem < ApplicationRecord
       where(id: transactions.pluck(:id).uniq).sum(:value).round(2)
     end
 
-    def matches_filter_criteria(user:, tag_names:)
+    def all_transactions_for(user, tag_names:, from_date:, to_date:)
+      includes(:tag_transactions, :tags)
+        .where(
+          matches_filter_criteria(
+            user: user,
+            tag_names: tag_names,
+            date_range: { from_date: from_date, to_date: to_date }
+          )
+        )
+    end
+
+    def matches_filter_criteria(user:, tag_names:, date_range:)
       query = { user_id: user.id }
 
       return query unless tag_names.present?
       tag_ids = Tag.ids_for_names(tag_names, user)
-      # TODO: Improve how to return 0 transactions if all tag names
-      # do not map to tags
       return no_transactions_query unless tag_names.length == tag_ids.length
       trans_ids = transactions_with_tag_ids(tag_ids)
       query[:id] = trans_ids
+
+      query[:date] = date_range[:from_date]..date_range[:to_date]
 
       query
     end
@@ -132,6 +143,8 @@ class TransactionItem < ApplicationRecord
       transaction_ids
     end
 
+    # TODO: Improve how to return 0 transactions if all tag names
+    # do not map to tags
     def no_transactions_query
       { created_at: Time.now + 50.years }
     end
