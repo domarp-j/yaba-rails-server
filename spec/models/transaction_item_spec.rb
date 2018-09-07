@@ -125,6 +125,18 @@ RSpec.describe TransactionItem, type: :model do
       expect(result[:total_amount]).to eq(expected_sum)
     end
 
+    it 'sorts so that most recent transactions are first' do
+      result = TransactionItem.fetch_transactions_for(user, limit: TransactionItem.count)
+
+      transactions = result[:transactions]
+
+      expect(transactions[0].date).to be_within(1.hour).of(1.days.ago)
+      expect(transactions[1].date).to be_within(1.hour).of(2.days.ago)
+      expect(transactions[2].date).to be_within(1.hour).of(3.days.ago)
+      expect(transactions[3].date).to be_within(1.hour).of(1.weeks.ago)
+      expect(transactions.last.date).to be_within(1.hour).of(3.weeks.ago)
+    end
+
     it "fetches #{limit_default} transactions by default" do
       result = TransactionItem.fetch_transactions_for(user)
 
@@ -294,18 +306,6 @@ RSpec.describe TransactionItem, type: :model do
         expect(result[:transactions].first.date).to eq(to_date)
         expect(result[:transactions].last.date).to eq(earliest_trans.date)
       end
-    end
-
-    it 'sorts so that most recent transactions are first' do
-      result = TransactionItem.fetch_transactions_for(user, limit: TransactionItem.count)
-
-      transactions = result[:transactions]
-
-      expect(transactions[0].date).to be_within(1.hour).of(1.days.ago)
-      expect(transactions[1].date).to be_within(1.hour).of(2.days.ago)
-      expect(transactions[2].date).to be_within(1.hour).of(3.days.ago)
-      expect(transactions[3].date).to be_within(1.hour).of(1.weeks.ago)
-      expect(transactions.last.date).to be_within(1.hour).of(3.weeks.ago)
     end
   end
 
