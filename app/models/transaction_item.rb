@@ -38,8 +38,8 @@ class TransactionItem < ApplicationRecord
       limit: DEFAULT_LIMIT,
       page: FIRST_PAGE,
       tag_names: [],
-      from_date: Time.parse('1970-01-01'),
-      to_date: Time.now
+      from_date: nil,
+      to_date: nil
     )
       transactions = all_transactions_for(
         user,
@@ -87,12 +87,13 @@ class TransactionItem < ApplicationRecord
           matches_filter_criteria(
             user: user,
             tag_names: tag_names,
-            date_range: { from_date: from_date, to_date: to_date }
+            from_date: from_date,
+            to_date: to_date
           )
         )
     end
 
-    def matches_filter_criteria(user:, tag_names:, date_range:)
+    def matches_filter_criteria(user:, tag_names:, from_date:, to_date:)
       query = { user_id: user.id }
 
       if tag_names.present?
@@ -102,7 +103,9 @@ class TransactionItem < ApplicationRecord
         query[:id] = trans_ids
       end
 
-      query[:date] = date_range[:from_date]..date_range[:to_date]
+      query_from_date = from_date || Time.parse('1970-01-01')
+      query_to_date = to_date || Time.now
+      query[:date] = query_from_date..query_to_date
 
       query
     end

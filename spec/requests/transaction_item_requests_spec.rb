@@ -133,6 +133,28 @@ RSpec.describe 'transaction items requests:', type: :request do
       end
     end
 
+    it 'returns transactions within a specific date range if a from_date or to_date is provided' do
+      create(:transaction_item, date: Time.parse('July 3 2018'), user: user)
+      first_expected_trans = create(:transaction_item, date: Time.parse('July 28 2018'), user: user)
+      create(:transaction_item, date: Time.parse('August 15 2018'), user: user)
+      last_expected_trans = create(:transaction_item, date: Time.parse('September 3 2018'), user: user)
+      create(:transaction_item, date: Time.parse('October 5 2018'), user: user)
+      create(:transaction_item, date: Time.parse('October 30 2018'), user: user)
+
+      get transaction_items_path,
+          params: { from_date: '2018-07-15', to_date: '2018-09-03' },
+          headers: devise_request_headers
+
+      body = JSON.parse(response.body)
+
+      transactions = body['content']['transactions']
+
+      assert_response_success(response, body)
+      expect(transactions.length).to eq(3)
+      expect(transactions.first['id']).to eq(last_expected_trans.id)
+      expect(transactions.last['id']).to eq(first_expected_trans.id)
+    end
+
     it 'does not return transaction items for other users' do
       another_user = create(:user, email: 'test2@example.com')
       create_list(:transaction_item, 5, :large_income, user: another_user)
