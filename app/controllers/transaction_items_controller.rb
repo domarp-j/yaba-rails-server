@@ -8,7 +8,9 @@ class TransactionItemsController < ApplicationController
       current_user,
       limit: limit_param,
       page: page_param,
-      tag_names: fetch_params[:tag_names]
+      tag_names: fetch_params[:tag_names],
+      from_date: fetch_params[:from_date],
+      to_date: fetch_params[:to_date]
     )
 
     if successful_fetch?(result)
@@ -64,7 +66,7 @@ class TransactionItemsController < ApplicationController
   private
 
   def fetch_params
-    params.permit(:limit, :page, tag_names: [])
+    params.permit(:limit, :page, :from_date, :to_date, tag_names: [])
   end
 
   def trans_params

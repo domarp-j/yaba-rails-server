@@ -21,6 +21,13 @@ Metrics/BlockLength:
 Metrics/MethodLength:
   Max: 15
 
+Metrics/ParameterLists:
+  Exclude:
+    - 'app/models/transaction_item.rb'
+
+Metrics/ClassLength:
+  Max: 120
+
 Style/SymbolArray:
   Exclude:
     - 'Gemfile'

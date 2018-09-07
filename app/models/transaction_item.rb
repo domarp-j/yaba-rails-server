@@ -37,15 +37,15 @@ class TransactionItem < ApplicationRecord
       user,
       limit: DEFAULT_LIMIT,
       page: FIRST_PAGE,
-      tag_names: []
+      tag_names: [],
+      from_date: nil,
+      to_date: nil
     )
-      transactions = includes(:tag_transactions, :tags)
-                     .where(
-                       matches_filter_criteria(
-                         user: user,
-                         tag_names: tag_names
-                       )
-                     )
+      transactions = all_transactions_for(
+        user,
+        tag_names: tag_names,
+        from_date: from_date, to_date: to_date
+      )
 
       {
         count: transactions.count,
@@ -81,21 +81,36 @@ class TransactionItem < ApplicationRecord
       where(id: transactions.pluck(:id).uniq).sum(:value).round(2)
     end
 
-    def matches_filter_criteria(user:, tag_names:)
+    def all_transactions_for(user, tag_names:, from_date:, to_date:)
+      includes(:tag_transactions, :tags)
+        .where(
+          matches_filter_criteria(
+            user: user,
+            tag_names: tag_names,
+            from_date: from_date,
+            to_date: to_date
+          )
+        )
+    end
+
+    def matches_filter_criteria(user:, tag_names:, from_date:, to_date:)
       query = { user_id: user.id }
 
-      return query unless tag_names.present?
-      tag_ids = Tag.ids_for_names(tag_names, user)
-      # TODO: Improve how to return 0 transactions if all tag names
-      # do not map to tags
-      return no_transactions_query unless tag_names.length == tag_ids.length
-      trans_ids = transactions_with_tag_ids(tag_ids)
-      query[:id] = trans_ids
+      if tag_names.present?
+        tag_ids = Tag.ids_for_names(tag_names, user)
+        return no_transactions_query unless tag_names.length == tag_ids.length
+        trans_ids = transactions_with_tag_ids(tag_ids)
+        query[:id] = trans_ids
+      end
+
+      query_from_date = from_date || Time.parse('1970-01-01')
+      query_to_date = to_date || Time.now
+      query[:date] = query_from_date..query_to_date
 
       query
     end
 
-    # This method return IDs for transactions that are attached to tags with
+    # This method return IDs for t    ransactions that are attached to tags with
     # the provided IDs.
     # It ensures that the returned transaction are attached to *all* of the
     # provided tags rather than *any* tag.
@@ -132,6 +147,8 @@ class TransactionItem < ApplicationRecord
       transaction_ids
     end
 
+    # TODO: Improve how to return 0 transactions if all tag names
+    # do not map to tags
     def no_transactions_query
       { created_at: Time.now + 50.years }
     end
