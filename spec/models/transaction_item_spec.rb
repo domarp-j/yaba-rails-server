@@ -411,7 +411,7 @@ RSpec.describe TransactionItem, type: :model do
       # Description that will be used for the query
       let(:desc_query) { 'test' }
 
-      # All of the transactions that are expected from the test
+      # All of the transactions that are expected from the tests
       let(:trans0) { create(:transaction_item, description: 'test 123', date: Time.parse('August 15 2018'), user: user) }
       let(:trans1) { create(:transaction_item, description: '123 test', date: Time.parse('September 30 2018'), user: user) }
       let(:trans2) { create(:transaction_item, description: 'TEST', date: Time.parse('October 7 2018'), user: user) }
@@ -426,8 +426,8 @@ RSpec.describe TransactionItem, type: :model do
           create(:tag_transaction, tag_id: tag1.id, transaction_item_id: trans.id)
         end
 
-        # Add some transactions that are *almost* valid
-        # They do not have all of the required tags
+        # Add transactions that do not have all of the required tags
+        # These transactions will be expected from the "matches any tag" test
         trans_list_without_tag = create_list(
           :transaction_item,
           5,
@@ -440,16 +440,14 @@ RSpec.describe TransactionItem, type: :model do
           create(:tag_transaction, tag_id: tag2.id, transaction_item_id: trans.id)
         end
 
-        # Add some transactions that are *almost* valid
-        # They are outside of the date range
+        # Add transactions that are outside of the date range
         ['July 1 2018', 'August 3 2018', 'December 15 2018', 'January 11 2019'].each do |date_str|
           trans = create(:transaction_item, description: desc_query, date: Time.parse(date_str), user: user)
           create(:tag_transaction, tag_id: tag0.id, transaction_item_id: trans.id)
           create(:tag_transaction, tag_id: tag1.id, transaction_item_id: trans.id)
         end
 
-        # Add some transactions that are *almost* valid
-        # They do not match the provided description
+        # Add transactions that do not partially match the provided description
         trans_list_wrong_desc = create_list(
           :transaction_item,
           5,
@@ -473,6 +471,25 @@ RSpec.describe TransactionItem, type: :model do
         )
 
         expect(result[:transactions].length).to eq(6)
+      end
+
+      it 'fetches the correct transactions, matching any tag' do
+        # Create some transactions with either of tag0 or tag1
+        trans0 = create(:transaction_item, description: desc_query, date: Time.parse('October 1 2018'), user: user)
+        create(:tag_transaction, tag_id: tag0.id, transaction_item_id: trans0.id)
+        trans1 = create(:transaction_item, description: desc_query, date: Time.parse('October 1 2018'), user: user)
+        create(:tag_transaction, tag_id: tag1.id, transaction_item_id: trans1.id)
+
+        result = TransactionItem.fetch_transactions_for(
+          user,
+          tag_names: [tag0, tag1].map(&:name),
+          description: desc_query,
+          from_date: from_date_query,
+          to_date: to_date_query,
+          match_all_tags: false
+        )
+
+        expect(result[:transactions].length).to eq(13)
       end
     end
   end
