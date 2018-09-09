@@ -133,46 +133,81 @@ RSpec.describe 'transaction items requests:', type: :request do
       end
     end
 
-    it 'returns transactions within a specific date range if a from_date or to_date is provided' do
-      create(:transaction_item, date: Time.parse('July 3 2018'), user: user)
-      first_expected_trans = create(:transaction_item, date: Time.parse('July 28 2018'), user: user)
-      create(:transaction_item, date: Time.parse('August 15 2018'), user: user)
-      last_expected_trans = create(:transaction_item, date: Time.parse('September 3 2018'), user: user)
-      create(:transaction_item, date: Time.parse('October 5 2018'), user: user)
-      create(:transaction_item, date: Time.parse('October 30 2018'), user: user)
+    context 'date range params' do
+      let!(:first_expected_trans) { create(:transaction_item, date: Time.parse('July 28 2018'), user: user) }
+      let!(:last_expected_trans) { create(:transaction_item, date: Time.parse('September 3 2018'), user: user) }
 
-      get transaction_items_path,
-          params: { from_date: '2018-07-15', to_date: '2018-09-03' },
-          headers: devise_request_headers
+      before do
+        create(:transaction_item, date: Time.parse('July 3 2018'), user: user)
+        create(:transaction_item, date: Time.parse('August 15 2018'), user: user)
+        create(:transaction_item, date: Time.parse('October 5 2018'), user: user)
+        create(:transaction_item, date: Time.parse('October 30 2018'), user: user)
+      end
 
-      body = JSON.parse(response.body)
+      it 'returns transactions within a specific date range if a from_date or to_date is provided' do
+        get transaction_items_path,
+            params: { from_date: '2018-07-15', to_date: '2018-09-03' },
+            headers: devise_request_headers
 
-      transactions = body['content']['transactions']
+        body = JSON.parse(response.body)
 
-      assert_response_success(response, body)
-      expect(transactions.length).to eq(3)
-      expect(transactions.first['id']).to eq(last_expected_trans.id)
-      expect(transactions.last['id']).to eq(first_expected_trans.id)
+        transactions = body['content']['transactions']
+
+        assert_response_success(response, body)
+        expect(transactions.length).to eq(3)
+        expect(transactions.first['id']).to eq(last_expected_trans.id)
+        expect(transactions.last['id']).to eq(first_expected_trans.id)
+      end
+
+      it 'does not throw an error if any date range params are empty' do
+        get transaction_items_path,
+            params: { from_date: '', to_date: '' },
+            headers: devise_request_headers
+
+        body = JSON.parse(response.body)
+
+        transactions = body['content']['transactions']
+
+        assert_response_success(response, body)
+        expect(transactions.length).to eq(4)
+      end
     end
 
-    it 'does not throw error if any date range params are provided but empty' do
-      create(:transaction_item, date: Time.parse('July 3 2018'), user: user)
-      create(:transaction_item, date: Time.parse('July 28 2018'), user: user)
-      create(:transaction_item, date: Time.parse('August 15 2018'), user: user)
-      create(:transaction_item, date: Time.parse('September 3 2018'), user: user)
-      create(:transaction_item, date: Time.parse('October 5 2018'), user: user)
-      create(:transaction_item, date: Time.parse('October 30 2018'), user: user)
+    context 'description param' do
+      let(:desc) { 'income' }
 
-      get transaction_items_path,
-          params: { from_date: '', to_date: '' },
-          headers: devise_request_headers
+      before do
+        create(:transaction_item, description: 'income', user: user)
+        create(:transaction_item, description: 'INCOME', user: user)
+        create(:transaction_item, description: 'Income', user: user)
+        create(:transaction_item, description: 'incomex', user: user)
+        create(:transaction_item, description: 'xincome', user: user)
+        create(:transaction_item, description: 'xincome', user: user)
+        create(:transaction_item, description: 'xincomex', user: user)
+      end
 
-      body = JSON.parse(response.body)
+      it 'returns transactions that partially match a provided description' do
+        get transaction_items_path,
+            params: { description: desc },
+            headers: devise_request_headers
 
-      transactions = body['content']['transactions']
+        body = JSON.parse(response.body)
 
-      assert_response_success(response, body)
-      expect(transactions.length).to eq(4)
+        transactions = body['content']['transactions']
+
+        assert_response_success(response, body)
+        expect(transactions.length).to eq(7)
+      end
+
+      it 'does not throw an error if the description param is empty' do
+        get transaction_items_path,
+            params: { description: '' },
+            headers: devise_request_headers
+
+        body = JSON.parse(response.body)
+
+        assert_response_success(response, body)
+      end
     end
 
     it 'does not return transaction items for other users' do
