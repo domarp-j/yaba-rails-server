@@ -1,6 +1,4 @@
 class TransactionItem < ApplicationRecord
-  # TODO: Remove use of params throughout
-
   has_many :tag_transactions
   has_many :tags, through: :tag_transactions
 
@@ -130,7 +128,7 @@ class TransactionItem < ApplicationRecord
     def search_by_sql(description:)
       # Check for partial match of provided description
       return unless description
-      ['lower(description) like ?', "%#{description}%"]
+      ['lower(description) like ?', "%#{description.downcase}%"]
     end
 
     # This method return IDs for t    ransactions that are attached to tags with

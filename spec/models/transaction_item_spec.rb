@@ -308,18 +308,73 @@ RSpec.describe TransactionItem, type: :model do
       end
     end
 
+    context 'with description for partial-match search' do
+      let(:description_partial) { 'Some Purc' }
+
+      # Descriptions that should match
+      let(:positive_description_matches) do
+        [
+          'Some purc',
+          'Some Purc',
+          'Some purchase',
+          'some purchase',
+          'sOmE pUrChAsE'
+        ]
+      end
+
+      # Descriptions that should not match
+      let(:negative_description_matches) do
+        [
+          'Not at all a close description',
+          'Som Purc', # TODO: Support more through fuzzy-matching, like close-enoughs?
+          'Sume Purc',
+          'A Purchase'
+        ]
+      end
+
+      before do
+        (positive_description_matches + negative_description_matches).each do |desc|
+          create(:transaction_item, description: desc, user: user)
+        end
+      end
+
+      it 'fetches transactions that partially match provided description' do
+        result = TransactionItem.fetch_transactions_for(
+          user,
+          description: description_partial
+        )
+
+        expect(result[:transactions].length).to eq(positive_description_matches.length)
+        result[:transactions].each do |trans|
+          expect(positive_description_matches).to include(trans.description)
+        end
+      end
+    end
+
     context 'all possible queries' do
+      # Tags that will be used for the query
       let(:tag0) { create(:tag, name: 'tag0', user: user) }
       let(:tag1) { create(:tag, name: 'tag1', user: user) }
+
+      # Tag that will not be used for the query
       let(:tag2) { create(:tag, name: 'tag2', user: user) }
 
+      # From-date for query
+      let(:from_date_query) { '2018-08-14' }
+
+      # To-date for query
+      let(:to_date_query) { '2018-11-28' }
+
+      # Description that will be used for the query
+      let(:desc_query) { 'test' }
+
       # All of the transactions that are expected from the test
-      let(:trans0) { create(:transaction_item, date: Time.parse('August 15 2018'), user: user) }
-      let(:trans1) { create(:transaction_item, date: Time.parse('September 30 2018'), user: user) }
-      let(:trans2) { create(:transaction_item, date: Time.parse('October 7 2018'), user: user) }
-      let(:trans3) { create(:transaction_item, date: Time.parse('October 31 2018'), user: user) }
-      let(:trans4) { create(:transaction_item, date: Time.parse('November 20 2018'), user: user) }
-      let(:trans5) { create(:transaction_item, date: Time.parse('November 28 2018'), user: user) }
+      let(:trans0) { create(:transaction_item, description: 'test 123', date: Time.parse('August 15 2018'), user: user) }
+      let(:trans1) { create(:transaction_item, description: '123 test', date: Time.parse('September 30 2018'), user: user) }
+      let(:trans2) { create(:transaction_item, description: 'TEST', date: Time.parse('October 7 2018'), user: user) }
+      let(:trans3) { create(:transaction_item, description: 'EST TEST', date: Time.parse('October 31 2018'), user: user) }
+      let(:trans4) { create(:transaction_item, description: 'tttestttt', date: Time.parse('November 20 2018'), user: user) }
+      let(:trans5) { create(:transaction_item, description: 'I must attest', date: Time.parse('November 28 2018'), user: user) }
 
       before do
         # Give the transactions above the tags that will be used for the query
@@ -328,25 +383,50 @@ RSpec.describe TransactionItem, type: :model do
           create(:tag_transaction, tag_id: tag1.id, transaction_item_id: trans.id)
         end
 
-        # Add some transactions with one tag that will *not* be used for the query
-        create_list(:transaction_item, 5, date: Time.parse('October 1 2018'), user: user).each do |trans|
+        # Add some transactions that are *almost* valid
+        # They do not have all of the required tags
+        trans_list_without_tag = create_list(
+          :transaction_item,
+          5,
+          description: desc_query,
+          date: Time.parse('October 1 2018'),
+          user: user
+        )
+        trans_list_without_tag.each do |trans|
           create(:tag_transaction, tag_id: tag0.id, transaction_item_id: trans.id)
           create(:tag_transaction, tag_id: tag2.id, transaction_item_id: trans.id)
         end
 
-        # Some transactions out of the date range
-        create(:transaction_item, date: Time.parse('July 1 2018'), user: user)
-        create(:transaction_item, date: Time.parse('August 3 2018'), user: user)
-        create(:transaction_item, date: Time.parse('December 15 2018'), user: user)
-        create(:transaction_item, date: Time.parse('January 11 2019'), user: user)
+        # Add some transactions that are *almost* valid
+        # They are outside of the date range
+        ['July 1 2018', 'August 3 2018', 'December 15 2018', 'January 11 2019'].each do |date_str|
+          trans = create(:transaction_item, description: desc_query, date: Time.parse(date_str), user: user)
+          create(:tag_transaction, tag_id: tag0.id, transaction_item_id: trans.id)
+          create(:tag_transaction, tag_id: tag1.id, transaction_item_id: trans.id)
+        end
+
+        # Add some transactions that are *almost* valid
+        # They do not match the provided description
+        trans_list_wrong_desc = create_list(
+          :transaction_item,
+          5,
+          description: 'Not a match',
+          date: Time.parse('October 1 2018'),
+          user: user
+        )
+        trans_list_wrong_desc.each do |trans|
+          create(:tag_transaction, tag_id: tag0.id, transaction_item_id: trans.id)
+          create(:tag_transaction, tag_id: tag1.id, transaction_item_id: trans.id)
+        end
       end
 
       it 'fetches the correct transactions' do
         result = TransactionItem.fetch_transactions_for(
           user,
           tag_names: [tag0, tag1].map(&:name),
-          from_date: '2018-08-14',
-          to_date: '2018-11-28'
+          description: desc_query,
+          from_date: from_date_query,
+          to_date: to_date_query
         )
 
         expect(result[:transactions].length).to eq(6)
