@@ -39,12 +39,14 @@ class TransactionItem < ApplicationRecord
       page: FIRST_PAGE,
       tag_names: [],
       from_date: nil,
-      to_date: nil
+      to_date: nil,
+      description: nil
     )
       transactions = all_transactions_for(
         user,
         tag_names: tag_names,
-        from_date: from_date, to_date: to_date
+        from_date: from_date, to_date: to_date,
+        description: description
       )
 
       {
@@ -81,21 +83,34 @@ class TransactionItem < ApplicationRecord
       where(id: transactions.pluck(:id).uniq).sum(:value).round(2)
     end
 
-    def all_transactions_for(user, tag_names:, from_date:, to_date:)
+    def all_transactions_for(
+      user,
+      tag_names:,
+      from_date:,
+      to_date:,
+      description:
+    )
       includes(:tag_transactions, :tags)
         .where(
-          matches_filter_criteria(
+          search_by_active_record(
             user: user,
             tag_names: tag_names,
             from_date: from_date,
             to_date: to_date
           )
         )
+        .where(
+          search_by_sql(
+            description: description
+          )
+        )
     end
 
-    def matches_filter_criteria(user:, tag_names:, from_date:, to_date:)
+    # Search transactions using ActiveRecord
+    def search_by_active_record(user:, tag_names:, from_date:, to_date:)
       query = { user_id: user.id }
 
+      # Query by tag name
       if tag_names.present?
         tag_ids = Tag.ids_for_names(tag_names, user)
         return no_transactions_query unless tag_names.length == tag_ids.length
@@ -103,11 +118,19 @@ class TransactionItem < ApplicationRecord
         query[:id] = trans_ids
       end
 
+      # Query by date range
       query_from_date = from_date || Time.parse('1970-01-01')
       query_to_date = to_date || Time.now
       query[:date] = query_from_date..query_to_date
 
       query
+    end
+
+    # Search transactions using reliable old SQL
+    def search_by_sql(description:)
+      # Check for partial match of provided description
+      return unless description
+      ['lower(description) like ?', "%#{description}%"]
     end
 
     # This method return IDs for t    ransactions that are attached to tags with
