@@ -67,7 +67,7 @@ RSpec.describe 'transaction items requests:', type: :request do
       create_list(:transaction_item, 10, :purchase, :two_weeks_ago, user: user)
       create_list(:transaction_item, 5, :purchase, :one_week_ago, user: user)
 
-      get transaction_items_path, params: { limit: 5 }, headers: devise_request_headers
+      get transaction_items_path, params: { limit: '5' }, headers: devise_request_headers
       body = JSON.parse(response.body)
 
       transactions = body['content']['transactions']
@@ -83,7 +83,7 @@ RSpec.describe 'transaction items requests:', type: :request do
       create_list(:transaction_item, limit_default, :purchase, :two_weeks_ago, user: user)
       create_list(:transaction_item, limit_default, :purchase, :one_week_ago, user: user)
 
-      get transaction_items_path, params: { page: 1 }, headers: devise_request_headers
+      get transaction_items_path, params: { page: '1' }, headers: devise_request_headers
       body = JSON.parse(response.body)
 
       transactions = body['content']['transactions']
@@ -99,7 +99,7 @@ RSpec.describe 'transaction items requests:', type: :request do
       create_list(:transaction_item, 10, :purchase, :two_weeks_ago, user: user)
       create_list(:transaction_item, 5, :purchase, :one_week_ago, user: user)
 
-      get transaction_items_path, params: { limit: 6, page: 1 }, headers: devise_request_headers
+      get transaction_items_path, params: { limit: '6', page: '1' }, headers: devise_request_headers
       body = JSON.parse(response.body)
 
       assert_response_success(response, body)
@@ -276,7 +276,7 @@ RSpec.describe 'transaction items requests:', type: :request do
       limit = 10
       create_list(:transaction_item, limit, user: user)
 
-      get transaction_items_path, params: { limit: limit, page: 1 }, headers: devise_request_headers
+      get transaction_items_path, params: { limit: limit.to_s, page: '1' }, headers: devise_request_headers
       body = JSON.parse(response.body)
 
       assert_response_success(response, body)
