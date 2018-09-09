@@ -62,41 +62,38 @@ class TransactionItemsController < ApplicationController
   private
 
   def fetch_params
-    params.permit(:limit, :page, :from_date, :to_date, tag_names: [])
+    params.permit(
+      :limit, :page,
+      :from_date, :to_date,
+      :description,
+      tag_names: []
+    )
   end
 
   def trans_params
     params.permit(:id, :description, :value, :date)
   end
 
-  def param_for(param_key, fallback:)
-    fetch_params[param_key] ? fetch_params[param_key].to_i : fallback
-  end
-
-  def limit_param
-    param_for(:limit, fallback: TransactionItem::DEFAULT_LIMIT)
-  end
-
-  def page_param
-    param_for(:page, fallback: TransactionItem::FIRST_PAGE)
-  end
-
-  def present_param(param)
+  def param_for(param)
     fetch_params[param].present? && fetch_params[param]
   end
 
   def index_query_params
-    {
-      limit: limit_param,
-      page: page_param,
-      tag_names: present_param(:tag_names),
-      from_date: present_param(:from_date),
-      to_date: present_param(:to_date)
+    index_query = {
+      tag_names: param_for(:tag_names),
+      from_date: param_for(:from_date),
+      to_date: param_for(:to_date),
+      description: param_for(:description)
     }
+
+    index_query[:limit] = param_for(:limit).to_i if param_for(:limit)
+    index_query[:page] = param_for(:page).to_i if param_for(:page)
+
+    index_query
   end
 
   def successful_fetch?(result)
-    result[:count] > 0 || page_param > 0
+    result[:count] > 0 || (param_for(:page) && param_for(:page) > 0)
   end
 
   def successful_fetch_response(result)

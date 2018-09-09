@@ -175,6 +175,29 @@ RSpec.describe 'transaction items requests:', type: :request do
       expect(transactions.length).to eq(4)
     end
 
+    it 'returns transactions that partially match a provided description' do
+      desc = 'income'
+
+      create(:transaction_item, description: 'income', user: user)
+      create(:transaction_item, description: 'INCOME', user: user)
+      create(:transaction_item, description: 'Income', user: user)
+      create(:transaction_item, description: 'incomex', user: user)
+      create(:transaction_item, description: 'xincome', user: user)
+      create(:transaction_item, description: 'xincome', user: user)
+      create(:transaction_item, description: 'xincomex', user: user)
+
+      get transaction_items_path,
+          params: { description: desc },
+          headers: devise_request_headers
+
+      body = JSON.parse(response.body)
+
+      transactions = body['content']['transactions']
+
+      assert_response_success(response, body)
+      expect(transactions.length).to eq(7)
+    end
+
     it 'does not return transaction items for other users' do
       another_user = create(:user, email: 'test2@example.com')
       create_list(:transaction_item, 5, :large_income, user: another_user)
