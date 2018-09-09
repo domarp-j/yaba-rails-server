@@ -79,8 +79,9 @@ class TransactionItemsController < ApplicationController
     fetch_params[param].present? && fetch_params[param]
   end
 
-  def bool_param(param)
-    ActiveRecord::Type::Boolean.new.cast(param)
+  def match_all_tags_param
+    return true unless fetch_params[:match_all_tags]
+    ActiveRecord::Type::Boolean.new.cast(fetch_params[:match_all_tags])
   end
 
   def index_query_params
@@ -93,10 +94,7 @@ class TransactionItemsController < ApplicationController
 
     index_query[:limit] = param_for(:limit).to_i if param_for(:limit)
     index_query[:page] = param_for(:page).to_i if param_for(:page)
-
-    unless fetch_params[:match_all_tags].nil?
-      index_query[:match_all_tags] = bool_param(fetch_params[:match_all_tags])
-    end
+    index_query[:match_all_tags] = match_all_tags_param
 
     index_query
   end
