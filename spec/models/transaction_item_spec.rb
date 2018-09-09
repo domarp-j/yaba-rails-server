@@ -225,36 +225,79 @@ RSpec.describe TransactionItem, type: :model do
         create(:tag_transaction, tag_id: tag2.id, transaction_item_id: large_purchase.id)
       end
 
-      it 'fetches all transactions with the following tag names (case 1)' do
-        result = TransactionItem.fetch_transactions_for(user, tag_names: tag_list0.map(&:name))
+      context 'match all tags (default)' do
+        it 'fetches all transactions with all of the following tag names (case 1)' do
+          result = TransactionItem.fetch_transactions_for(user, tag_names: tag_list0.map(&:name))
 
-        expect(result[:transactions].length).to eq(3)
-        result[:transactions].each do |transaction_item|
-          expect([purchase, large_income, large_purchase]).to include(transaction_item)
+          expect(result[:transactions].length).to eq(3)
+          result[:transactions].each do |transaction_item|
+            expect([purchase, large_income, large_purchase]).to include(transaction_item)
+          end
+        end
+
+        it 'fetches all transactions with all of the following tag names (case 2)' do
+          result = TransactionItem.fetch_transactions_for(user, tag_names: tag_list1.map(&:name))
+
+          expect(result[:transactions].count).to eq(2)
+          result[:transactions].each do |transaction_item|
+            expect([large_income, large_purchase]).to include(transaction_item)
+          end
+        end
+
+        it 'fetches all transactions with all of the following tag names (case 3)' do
+          result = TransactionItem.fetch_transactions_for(user, tag_names: tag_list2.map(&:name))
+
+          expect(result[:transactions].length).to eq(1)
+          expect(result[:transactions].first).to eq(large_purchase)
+        end
+
+        it 'does not return any transactions if any of the tag names are not mapped to a tag' do
+          bad_tag_name_list = tag_list0.map(&:name) + ['not-a-tag']
+          result = TransactionItem.fetch_transactions_for(user, tag_names: bad_tag_name_list)
+
+          expect(result[:transactions].length).to eq(0)
         end
       end
 
-      it 'fetches all transactions with the following tag names (case 2)' do
-        result = TransactionItem.fetch_transactions_for(user, tag_names: tag_list1.map(&:name))
+      context 'match any tags' do
+        it 'fetches transactions with any of the following tag names (case 1)' do
+          result = TransactionItem.fetch_transactions_for(
+            user,
+            tag_names: tag_list0.map(&:name),
+            match_all_tags: false
+          )
 
-        expect(result[:transactions].count).to eq(2)
-        result[:transactions].each do |transaction_item|
-          expect([large_income, large_purchase]).to include(transaction_item)
+          expect(result[:transactions].length).to eq(3)
+          result[:transactions].each do |transaction_item|
+            expect([purchase, large_income, large_purchase]).to include(transaction_item)
+          end
         end
-      end
 
-      it 'fetches all transactions with the following tag names (case 3)' do
-        result = TransactionItem.fetch_transactions_for(user, tag_names: tag_list2.map(&:name))
+        it 'fetches transactions with any of the following tag names (case 2)' do
+          result = TransactionItem.fetch_transactions_for(
+            user,
+            tag_names: tag_list1.map(&:name),
+            match_all_tags: false
+          )
 
-        expect(result[:transactions].length).to eq(1)
-        expect(result[:transactions].first).to eq(large_purchase)
-      end
+          expect(result[:transactions].length).to eq(3)
+          result[:transactions].each do |transaction_item|
+            expect([purchase, large_income, large_purchase]).to include(transaction_item)
+          end
+        end
 
-      it 'does not return any transactions if any of the tag names are not mapped to a tag' do
-        bad_tag_name_list = tag_list0.map(&:name) + ['not-a-tag']
-        result = TransactionItem.fetch_transactions_for(user, tag_names: bad_tag_name_list)
+        it 'fetches transactions with any of the following tag names (case 3)' do
+          result = TransactionItem.fetch_transactions_for(
+            user,
+            tag_names: tag_list2.map(&:name),
+            match_all_tags: false
+          )
 
-        expect(result[:transactions].length).to eq(0)
+          expect(result[:transactions].length).to eq(3)
+          result[:transactions].each do |transaction_item|
+            expect([purchase, large_income, large_purchase]).to include(transaction_item)
+          end
+        end
       end
     end
 
