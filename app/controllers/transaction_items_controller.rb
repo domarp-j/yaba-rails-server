@@ -100,7 +100,7 @@ class TransactionItemsController < ApplicationController
   end
 
   def successful_fetch?(result)
-    result[:count] > 0 || (param_for(:page) && param_for(:page) > 0)
+    result[:count] > 0 || (param_for(:page) && param_for(:page).to_i > 0)
   end
 
   def successful_fetch_response(result)
