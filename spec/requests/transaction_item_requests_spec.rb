@@ -108,28 +108,69 @@ RSpec.describe 'transaction items requests:', type: :request do
       expect(Time.parse(transaction['date'])).to be_within(1.hour).of(2.week.ago)
     end
 
-    it 'returns transactions for specific tags if tag_names is provided as a parameter' do
-      tag_names = ['some-tag-1', 'some-tag-2']
-      tag1 = create(:tag, name: tag_names[0], user: user)
-      tag2 = create(:tag, name: tag_names[1], user: user)
+    context 'tag params' do
+      let(:tag_names) { ['some-tag-1', 'some-tag-2'] }
 
-      create_list(:transaction_item, 3, :purchase, user: user).each do |trans|
-        create(:tag_transaction, tag_id: tag1.id, transaction_item_id: trans.id)
-        create(:tag_transaction, tag_id: tag2.id, transaction_item_id: trans.id)
+      let(:tag0) { create(:tag, name: tag_names[0], user: user) }
+      let(:tag1) { create(:tag, name: tag_names[1], user: user) }
+
+      let(:tag_0_trans_count) { 4 }
+      let(:tag_1_trans_count) { 3 }
+      let(:tag_0_1_trans_count) { 5 }
+
+      let(:trans_with_tags_count) do
+        tag_0_trans_count + tag_1_trans_count + tag_0_1_trans_count
       end
 
-      create_list(:transaction_item, 10, :income, user: user)
+      before do
+        # Transactions with only tag0
+        create_list(:transaction_item, tag_0_trans_count, :large_purchase, user: user).each do |trans|
+          create(:tag_transaction, tag_id: tag0.id, transaction_item_id: trans.id)
+        end
 
-      get transaction_items_path, params: { tag_names: tag_names }, headers: devise_request_headers
-      body = JSON.parse(response.body)
+        # Transactions with only tag1
+        create_list(:transaction_item, tag_1_trans_count, :large_income, user: user).each do |trans|
+          create(:tag_transaction, tag_id: tag1.id, transaction_item_id: trans.id)
+        end
 
-      transactions = body['content']['transactions']
+        # Transactions with both tag0 and tag1
+        create_list(:transaction_item, tag_0_1_trans_count, :purchase, user: user).each do |trans|
+          create(:tag_transaction, tag_id: tag0.id, transaction_item_id: trans.id)
+          create(:tag_transaction, tag_id: tag1.id, transaction_item_id: trans.id)
+        end
 
-      assert_response_success(response, body)
-      expect(transactions.length).to eq(3)
-      transactions.each do |trans_json|
-        tag_names_in_response = trans_json['tags'].map { |tag_json| tag_json['name'] }
-        tag_names_in_response.each { |tag| expect(tag_names).to include(tag) }
+        # Transactions without any tags
+        create_list(:transaction_item, 10, :income, user: user)
+      end
+
+      it 'returns transactions that contain *all* of the provided tags' do
+        get transaction_items_path,
+            params: { tag_names: tag_names },
+            headers: devise_request_headers
+
+        body = JSON.parse(response.body)
+
+        transactions = body['content']['transactions']
+
+        assert_response_success(response, body)
+        expect(transactions.length).to eq(tag_0_1_trans_count)
+        transactions.each do |trans_json|
+          tag_names_in_response = trans_json['tags'].map { |tag_json| tag_json['name'] }
+          tag_names_in_response.each { |tag| expect(tag_names).to include(tag) }
+        end
+      end
+
+      it 'returns transactions that contain *any* of the provided tags' do
+        get transaction_items_path,
+            params: { tag_names: tag_names, match_all_tags: false },
+            headers: devise_request_headers
+
+        body = JSON.parse(response.body)
+
+        transactions = body['content']['transactions']
+
+        assert_response_success(response, body)
+        expect(transactions.length).to eq(trans_with_tags_count)
       end
     end
 

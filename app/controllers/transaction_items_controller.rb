@@ -66,6 +66,7 @@ class TransactionItemsController < ApplicationController
       :limit, :page,
       :from_date, :to_date,
       :description,
+      :match_all_tags,
       tag_names: []
     )
   end
@@ -78,6 +79,11 @@ class TransactionItemsController < ApplicationController
     fetch_params[param].present? && fetch_params[param]
   end
 
+  def match_all_tags_param
+    return true unless fetch_params[:match_all_tags]
+    ActiveRecord::Type::Boolean.new.cast(fetch_params[:match_all_tags])
+  end
+
   def index_query_params
     index_query = {
       tag_names: param_for(:tag_names),
@@ -88,6 +94,7 @@ class TransactionItemsController < ApplicationController
 
     index_query[:limit] = param_for(:limit).to_i if param_for(:limit)
     index_query[:page] = param_for(:page).to_i if param_for(:page)
+    index_query[:match_all_tags] = match_all_tags_param
 
     index_query
   end

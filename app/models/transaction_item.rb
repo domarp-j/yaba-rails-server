@@ -38,13 +38,15 @@ class TransactionItem < ApplicationRecord
       tag_names: [],
       from_date: nil,
       to_date: nil,
-      description: nil
+      description: nil,
+      match_all_tags: true
     )
       transactions = all_transactions_for(
         user,
         tag_names: tag_names,
         from_date: from_date, to_date: to_date,
-        description: description
+        description: description,
+        match_all_tags: match_all_tags
       )
 
       {
@@ -86,7 +88,8 @@ class TransactionItem < ApplicationRecord
       tag_names:,
       from_date:,
       to_date:,
-      description:
+      description:,
+      match_all_tags:
     )
       includes(:tag_transactions, :tags)
         .where(
@@ -94,7 +97,8 @@ class TransactionItem < ApplicationRecord
             user: user,
             tag_names: tag_names,
             from_date: from_date,
-            to_date: to_date
+            to_date: to_date,
+            match_all_tags: match_all_tags
           )
         )
         .where(
@@ -105,14 +109,26 @@ class TransactionItem < ApplicationRecord
     end
 
     # Search transactions using ActiveRecord
-    def search_by_active_record(user:, tag_names:, from_date:, to_date:)
+    def search_by_active_record(
+      user:,
+      tag_names:,
+      from_date:,
+      to_date:,
+      match_all_tags:
+    )
       query = { user_id: user.id }
 
       # Query by tag name
       if tag_names.present?
         tag_ids = Tag.ids_for_names(tag_names, user)
-        return no_transactions_query unless tag_names.length == tag_ids.length
-        trans_ids = transactions_with_tag_ids(tag_ids)
+
+        if match_all_tags
+          return no_transactions_query unless tag_names.length == tag_ids.length
+          trans_ids = transactions_with_all_tags(tag_ids)
+        else
+          trans_ids = transactions_with_any_tags(tag_ids)
+        end
+
         query[:id] = trans_ids
       end
 
@@ -131,11 +147,8 @@ class TransactionItem < ApplicationRecord
       ['lower(description) like ?', "%#{description.downcase}%"]
     end
 
-    # This method return IDs for t    ransactions that are attached to tags with
-    # the provided IDs.
-    # It ensures that the returned transaction are attached to *all* of the
-    # provided tags rather than *any* tag.
-    def transactions_with_tag_ids(tag_ids)
+    # Return IDs for transactions that are attached to *all* of the provided tags
+    def transactions_with_all_tags(tag_ids)
       # Get all of the tag-transactions associated with the provided tag_ids
       # Crucial: Sort by transaction item ID, *then* by tag ID for the next step
       tag_transactions = TagTransaction.where(tag_id: tag_ids)
@@ -166,6 +179,12 @@ class TransactionItem < ApplicationRecord
       end
 
       transaction_ids
+    end
+
+    # Return IDs for transactions that are attached to *any* of the provided tags
+    def transactions_with_any_tags(tag_ids)
+      tag_transactions = TagTransaction.where(tag_id: tag_ids)
+      tag_transactions.pluck(:transaction_item_id).uniq
     end
 
     # TODO: Improve how to return 0 transactions if all tag names
