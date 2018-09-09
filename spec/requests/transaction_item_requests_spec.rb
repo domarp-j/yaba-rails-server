@@ -155,6 +155,26 @@ RSpec.describe 'transaction items requests:', type: :request do
       expect(transactions.last['id']).to eq(first_expected_trans.id)
     end
 
+    it 'does not throw error if any date range params are provided but empty' do
+      create(:transaction_item, date: Time.parse('July 3 2018'), user: user)
+      create(:transaction_item, date: Time.parse('July 28 2018'), user: user)
+      create(:transaction_item, date: Time.parse('August 15 2018'), user: user)
+      create(:transaction_item, date: Time.parse('September 3 2018'), user: user)
+      create(:transaction_item, date: Time.parse('October 5 2018'), user: user)
+      create(:transaction_item, date: Time.parse('October 30 2018'), user: user)
+
+      get transaction_items_path,
+          params: { from_date: '', to_date: '' },
+          headers: devise_request_headers
+
+      body = JSON.parse(response.body)
+
+      transactions = body['content']['transactions']
+
+      assert_response_success(response, body)
+      expect(transactions.length).to eq(4)
+    end
+
     it 'does not return transaction items for other users' do
       another_user = create(:user, email: 'test2@example.com')
       create_list(:transaction_item, 5, :large_income, user: another_user)

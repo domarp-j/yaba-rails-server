@@ -6,11 +6,7 @@ class TransactionItemsController < ApplicationController
   def index
     result = TransactionItem.fetch_transactions_for(
       current_user,
-      limit: limit_param,
-      page: page_param,
-      tag_names: fetch_params[:tag_names],
-      from_date: fetch_params[:from_date],
-      to_date: fetch_params[:to_date]
+      index_query_params
     )
 
     if successful_fetch?(result)
@@ -83,6 +79,20 @@ class TransactionItemsController < ApplicationController
 
   def page_param
     param_for(:page, fallback: TransactionItem::FIRST_PAGE)
+  end
+
+  def present_param(param)
+    fetch_params[param].present? && fetch_params[param]
+  end
+
+  def index_query_params
+    {
+      limit: limit_param,
+      page: page_param,
+      tag_names: present_param(:tag_names),
+      from_date: present_param(:from_date),
+      to_date: present_param(:to_date)
+    }
   end
 
   def successful_fetch?(result)
