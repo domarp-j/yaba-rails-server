@@ -26,7 +26,7 @@ Metrics/ParameterLists:
     - 'app/models/transaction_item.rb'
 
 Metrics/ClassLength:
-  Max: 120
+  Max: 150
 
 Style/SymbolArray:
   Exclude:
