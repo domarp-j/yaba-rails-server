@@ -3,6 +3,8 @@ class TransactionItemsController < ApplicationController
 
   before_action :authenticate_user!
 
+  # TEST
+
   def index
     result = TransactionItem.fetch_transactions_for(
       current_user,
