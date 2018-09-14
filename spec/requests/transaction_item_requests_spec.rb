@@ -378,6 +378,16 @@ RSpec.describe 'transaction items requests:', type: :request do
       expect(transaction.value).to eq(updated_value)
       expect(transaction.date).to eq(Time.parse(updated_date))
     end
+
+    it 'fails if transaction is not found' do
+      post update_transaction_item_path,
+           params: { id: 1312, description: description, value: value, date: date },
+           headers: devise_request_headers
+
+      response_body = JSON.parse(response.body)
+
+      expect(response_body['message']).to eq('Transaction not found')
+    end
   end
 
   context 'deleting a transaction' do

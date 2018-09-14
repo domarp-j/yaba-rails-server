@@ -292,10 +292,16 @@ RSpec.describe Tag, type: :model do
       expect(new_tag_count - prev_tag_count).to eq(1)
     end
 
-    it 'fails gracefully for invalid tags with a name that is an empty string' do
-      params = {
-        name: ''
-      }
+    it 'fails gracefully if tag name contains spaces' do
+      params = {  name: 'tag name' }
+
+      tag = Tag.find_or_create_for(user, params)
+
+      expect(tag.valid?).to be(false)
+    end
+
+    it 'fails gracefully if tag name is blank' do
+      params = {  name: '' }
 
       tag = Tag.find_or_create_for(user, params)
 
