@@ -1,6 +1,4 @@
 class TagTransactionsController < ApplicationController
-  # TODO: Render a 404 response is transaction ID is not given as param
-
   include ResponseRender
 
   before_action :authenticate_user!

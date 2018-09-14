@@ -36,13 +36,19 @@ class TransactionItemsController < ApplicationController
 
   def update
     trans = TransactionItem.update_transaction_for(current_user, trans_params)
+
     if trans && trans.save
       json_response(
-        message: 'Transaction successfully updated', status: 200,
-        content: trans.jsonify
+        message: 'Transaction successfully updated',
+        content: trans.jsonify,
+        status: 200
       )
     else
-      json_response(message: 'Could not update transaction', status: 400)
+      json_response(
+        message: trans ? 'Transaction not updated' : 'Transaction not found',
+        content: trans ? trans.errors.full_messages : nil,
+        status: 400
+      )
     end
   end
 

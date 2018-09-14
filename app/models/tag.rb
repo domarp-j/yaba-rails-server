@@ -6,7 +6,11 @@ class Tag < ApplicationRecord
 
   belongs_to :user
 
-  validates :name, length: { minimum: 1 }
+  validates :name, length: { minimum: 1 },
+                   format: {
+                     with: /\A\S*\z/,
+                     message: 'should not include spaces'
+                   }
 
   def jsonify
     {
