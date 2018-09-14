@@ -87,7 +87,7 @@ class Tag < ApplicationRecord
 
   def self.ids_for_names(tag_names, user)
     user.tags
-        .where(name: tag_names)
+        .where('lower(name) in (?)', tag_names.map(&:downcase))
         .pluck(:id)
   end
 

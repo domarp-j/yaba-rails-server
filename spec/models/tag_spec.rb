@@ -327,6 +327,15 @@ RSpec.describe Tag, type: :model do
       end
     end
 
+    it 'returns the IDs of tags with the given names (case insensitive)' do
+      result = Tag.ids_for_names(tag_names.map(&:upcase), user)
+
+      expect(result.length).to eq(tag_ids.length)
+      result.each do |id|
+        expect(tag_ids).to include(id)
+      end
+    end
+
     it 'returns an empty array if tags with the given names are not found' do
       result = Tag.ids_for_names(['test3'], user)
       expect(result).to eq([])
