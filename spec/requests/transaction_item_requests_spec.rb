@@ -160,6 +160,23 @@ RSpec.describe 'transaction items requests:', type: :request do
         end
       end
 
+      it 'returns transactions that contain *all* of the provided tags (case insensitive)' do
+        get transaction_items_path,
+            params: { tag_names: tag_names.map(&:upcase) },
+            headers: devise_request_headers
+
+        body = JSON.parse(response.body)
+
+        assert_response_success(response, body)
+
+        transactions = body['content']['transactions']
+        expect(transactions.length).to eq(tag_0_1_trans_count)
+        transactions.each do |trans_json|
+          tag_names_in_response = trans_json['tags'].map { |tag_json| tag_json['name'] }
+          tag_names_in_response.each { |tag| expect(tag_names).to include(tag) }
+        end
+      end
+
       it 'returns transactions that contain *any* of the provided tags' do
         get transaction_items_path,
             params: { tag_names: tag_names, match_all_tags: false },
