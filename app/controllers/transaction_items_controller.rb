@@ -47,7 +47,7 @@ class TransactionItemsController < ApplicationController
       json_response(
         message: trans ? 'Transaction not updated' : 'Transaction not found',
         content: trans ? trans.errors.full_messages : nil,
-        status: 400
+        status: trans ? 400 : 404
       )
     end
   end

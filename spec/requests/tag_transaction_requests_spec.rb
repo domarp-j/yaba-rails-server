@@ -132,7 +132,7 @@ RSpec.describe 'tag-transaction requests:', type: :request do
       response_body = JSON.parse(response.body)
 
       expect(response.success?).to be(false)
-      expect(response_body['message']).to eq('Failed to update tag')
+      expect(response_body['message']).to eq('Could not update tag')
     end
 
     it 'returns a failure if the tag is not found' do
