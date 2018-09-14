@@ -318,8 +318,6 @@ RSpec.describe Tag, type: :model do
       create(:tag, id: tag_ids[1], name: tag_names[1], user: user)
     end
 
-
-
     it 'returns the IDs of tags with the given names' do
       result = Tag.ids_for_names(tag_names, user)
 
