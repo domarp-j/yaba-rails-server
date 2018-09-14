@@ -5,7 +5,7 @@ class TagTransactionsController < ApplicationController
 
   def create
     if transaction_has_tag_with_given_name?
-      return json_response(message: 'Transaction already has tag', status: 400)
+      return json_response(message: 'Transaction already has tag', status: 404)
     end
 
     tag = Tag.find_or_create_for(current_user, tag_params)
