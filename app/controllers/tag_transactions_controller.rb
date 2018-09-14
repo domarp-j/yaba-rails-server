@@ -18,7 +18,7 @@ class TagTransactionsController < ApplicationController
         status: 200
       )
     else
-      json_response(message: 'Could not create tag', status: 400)
+      failed_response(tag, message: 'Could not create tag')
     end
   end
 
@@ -37,7 +37,7 @@ class TagTransactionsController < ApplicationController
         status: 200
       )
     else
-      json_response(message: 'Failed to update tag', status: 400)
+      failed_response(tag, message: 'Could not update tag')
     end
   end
 
@@ -75,5 +75,13 @@ class TagTransactionsController < ApplicationController
     tag_json = tag.jsonify
     tag_json[:transaction_id] = trans_id.to_i
     tag_json
+  end
+
+  def failed_response(tag, message:)
+    json_response(
+      message: message,
+      content: tag.errors.full_messages,
+      status: 400
+    )
   end
 end
