@@ -251,6 +251,103 @@ RSpec.describe 'transaction items requests:', type: :request do
       assert_success
       expect(content_transactions).to eq([])
     end
+
+    context 'sorting' do
+      def content_transactions_ids
+        content_transactions.map { |trans| trans['id'] }
+      end
+
+      let!(:trans0) do
+        create(:transaction_item, description: 'Purchase A', value: -132.8, date: Time.parse('January 1 2014'), user: user)
+      end
+      let!(:trans1) do
+        create(:transaction_item, description: 'purchase B', value: -2510.3, date: Time.parse('March 31 1990'), user: user)
+      end
+      let!(:trans2) do
+        create(:transaction_item, description: 'Purchase C', value: -0.01, date: Time.parse('December 14 2017'), user: user)
+      end
+      let!(:trans3) do
+        create(:transaction_item, description: 'Income A', value: 2000, date: Time.parse('August 18 2015'), user: user)
+      end
+      let!(:trans4) do
+        create(:transaction_item, description: 'income B', value: 0.1, date: Time.parse('January 3 2014'), user: user)
+      end
+
+      let(:trans_by_date_asc) { [trans1, trans0, trans4, trans3, trans2] }
+      let(:trans_by_desc_asc) { [trans3, trans4, trans0, trans1, trans2] }
+      let(:trans_by_val_asc) { [trans1, trans0, trans2, trans4, trans3] }
+
+      let(:trans_id_by_date_asc) { trans_by_date_asc.map(&:id) }
+      let(:trans_id_by_desc_asc) { trans_by_desc_asc.map(&:id) }
+      let(:trans_id_by_val_asc) { trans_by_val_asc.map(&:id) }
+
+      it 'sorts by descending date by default' do
+        fetch_request
+
+        assert_success
+        expect(trans_id_by_date_asc.reverse).to eq(content_transactions_ids)
+      end
+
+      it 'sorts by ascending date' do
+        fetch_request(params: { sort_attribute: 'date', sort_order: 'asc' })
+
+        assert_success
+        expect(trans_id_by_date_asc).to eq(content_transactions_ids)
+      end
+
+      it 'sorts by descending date (params explicitly provided)' do
+        fetch_request(params: { sort_attribute: 'date', sort_order: 'desc' })
+
+        assert_success
+        expect(trans_id_by_date_asc.reverse).to eq(content_transactions_ids)
+      end
+
+      it 'sorts by ascending description (alphabetically)' do
+        fetch_request(params: { sort_attribute: 'description', sort_order: 'asc' })
+
+        assert_success
+        expect(trans_id_by_desc_asc).to eq(content_transactions_ids)
+      end
+
+      it 'sorts by descending description (reverse-alphabetically)' do
+        fetch_request(params: { sort_attribute: 'description', sort_order: 'desc' })
+
+        assert_success
+        expect(trans_id_by_desc_asc.reverse).to eq(content_transactions_ids)
+      end
+
+      it 'sorts by ascending value' do
+        fetch_request(params: { sort_attribute: 'value', sort_order: 'asc' })
+
+        assert_success
+        expect(trans_id_by_val_asc).to eq(content_transactions_ids)
+      end
+
+      it 'sorts by descending descending value' do
+        fetch_request(params: { sort_attribute: 'value', sort_order: 'desc' })
+
+        assert_success
+        expect(trans_id_by_val_asc.reverse).to eq(content_transactions_ids)
+      end
+
+      it 'fails if an invalid sort attribute param is provided' do
+        fetch_request(params: { sort_attribute: 'invalid', sort_order: 'desc' })
+
+        assert_failure
+        expect(content).to include(
+          "Invalid sort attribute. Should be one of: #{TransactionItemsController::SORT_ATTRIBUTE_PARAMS}"
+        )
+      end
+
+      it 'fails if an invalid sort order param is provided' do
+        fetch_request(params: { sort_attribute: 'date', sort_order: 'invalid' })
+
+        assert_failure
+        expect(content).to include(
+          "Invalid sort order. Should be one of: #{TransactionItemsController::SORT_ORDER_PARAMS}"
+        )
+      end
+    end
   end
 
   context 'adding a new transaction' do

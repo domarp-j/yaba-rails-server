@@ -3,7 +3,15 @@ class TransactionItemsController < ApplicationController
 
   before_action :authenticate_user!
 
+  SORT_ATTRIBUTE_PARAMS = %w[description value date].freeze
+  SORT_ORDER_PARAMS = %w[asc desc].freeze
+
   def index
+    invalid_params = check_for_invalid_params
+    if invalid_params.present?
+      return failed_fetch_response(content: invalid_params)
+    end
+
     result = TransactionItem.fetch_transactions_for(
       current_user,
       index_query_params
@@ -12,7 +20,7 @@ class TransactionItemsController < ApplicationController
     if successful_fetch?(result)
       successful_fetch_response(result)
     else
-      json_response(message: 'Could not fetch transactions', status: 400)
+      failed_fetch_response
     end
   end
 
@@ -73,6 +81,7 @@ class TransactionItemsController < ApplicationController
       :from_date, :to_date,
       :description,
       :match_all_tags,
+      :sort_attribute, :sort_order,
       tag_names: []
     )
   end
@@ -81,7 +90,7 @@ class TransactionItemsController < ApplicationController
     params.permit(:id, :description, :value, :date)
   end
 
-  def param_for(param)
+  def fetch_param(param)
     fetch_params[param].present? && fetch_params[param]
   end
 
@@ -90,23 +99,42 @@ class TransactionItemsController < ApplicationController
     ActiveRecord::Type::Boolean.new.cast(fetch_params[:match_all_tags])
   end
 
+  # TODO: could be enhanced to check for invalid params outside of sort params
+  def check_for_invalid_params
+    errors = []
+
+    sort_attr = fetch_param(:sort_attribute)
+    if sort_attr && !SORT_ATTRIBUTE_PARAMS.include?(sort_attr)
+      errors << "Invalid sort attribute. Should be one of: #{SORT_ATTRIBUTE_PARAMS}"
+    end
+
+    sort_order = fetch_param(:sort_order)
+    if sort_order && !SORT_ORDER_PARAMS.include?(sort_order)
+      errors << "Invalid sort order. Should be one of: #{SORT_ORDER_PARAMS}"
+    end
+
+    errors
+  end
+
   def index_query_params
     index_query = {
-      tag_names: param_for(:tag_names),
-      from_date: param_for(:from_date),
-      to_date: param_for(:to_date),
-      description: param_for(:description)
+      tag_names: fetch_param(:tag_names),
+      from_date: fetch_param(:from_date),
+      to_date: fetch_param(:to_date),
+      description: fetch_param(:description),
+      sort_attribute: fetch_param(:sort_attribute),
+      sort_order: fetch_param(:sort_order)
     }
 
-    index_query[:limit] = param_for(:limit).to_i if param_for(:limit)
-    index_query[:page] = param_for(:page).to_i if param_for(:page)
+    index_query[:limit] = fetch_param(:limit).to_i if fetch_param(:limit)
+    index_query[:page] = fetch_param(:page).to_i if fetch_param(:page)
     index_query[:match_all_tags] = match_all_tags_param
 
     index_query
   end
 
   def successful_fetch?(result)
-    result[:count] > 0 || (param_for(:page) && param_for(:page).to_i > 0)
+    result[:count] > 0 || (fetch_param(:page) && fetch_param(:page).to_i > 0)
   end
 
   def successful_fetch_response(result)
@@ -117,6 +145,13 @@ class TransactionItemsController < ApplicationController
         total_amount: result[:total_amount],
         transactions: result[:transactions].map(&:jsonify)
       }
+    )
+  end
+
+  def failed_fetch_response(content: nil)
+    json_response(
+      message: 'Could not fetch transactions', status: 400,
+      content: content
     )
   end
 end

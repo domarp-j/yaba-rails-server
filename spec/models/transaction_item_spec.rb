@@ -2,7 +2,6 @@ require 'rails_helper'
 
 RSpec.describe TransactionItem, type: :model do
   limit_default = TransactionItem::DEFAULT_LIMIT
-  page_default = TransactionItem::FIRST_PAGE
 
   let(:user) { create(:user) }
 
@@ -99,6 +98,9 @@ RSpec.describe TransactionItem, type: :model do
   end
 
   describe '.fetch_transactions_for' do
+    # This test covers complex scenarios for fetching transactions
+    # For basic, "happy-path" specs, please refer to the transaction item requests spec
+
     before do
       # Bulk of old incomes
       create_list(:transaction_item, limit_default, :repeated_income, :three_weeks_ago, user: user)
@@ -112,82 +114,7 @@ RSpec.describe TransactionItem, type: :model do
     let!(:large_income) { create(:transaction_item, :large_income, user: user, date: 2.days.ago) }
     let!(:large_purchase) { create(:transaction_item, :large_purchase, user: user, date: 1.days.ago) }
 
-    it 'returns the number of transactions' do
-      result = TransactionItem.fetch_transactions_for(user)
-
-      expect(result[:count]).to eq(user.transaction_items.count)
-    end
-
-    it 'returns the total value of the transactions' do
-      result = TransactionItem.fetch_transactions_for(user)
-      expected_sum = user.transaction_items.map(&:value).reduce(:+)
-
-      expect(result[:total_amount]).to eq(expected_sum)
-    end
-
-    it 'sorts so that most recent transactions are first' do
-      result = TransactionItem.fetch_transactions_for(user, limit: TransactionItem.count)
-
-      transactions = result[:transactions]
-
-      expect(transactions[0].date).to be_within(1.hour).of(1.days.ago)
-      expect(transactions[1].date).to be_within(1.hour).of(2.days.ago)
-      expect(transactions[2].date).to be_within(1.hour).of(3.days.ago)
-      expect(transactions[3].date).to be_within(1.hour).of(1.weeks.ago)
-      expect(transactions.last.date).to be_within(1.hour).of(3.weeks.ago)
-    end
-
-    it "fetches #{limit_default} transactions by default" do
-      result = TransactionItem.fetch_transactions_for(user)
-
-      expect(result[:transactions].length).to eq(limit_default)
-    end
-
-    it "fetches a user's transactions starting at index #{page_default} by default" do
-      result = TransactionItem.fetch_transactions_for(user)
-
-      expect(result[:transactions][0].date).to be_within(1.hour).of(1.days.ago)
-    end
-
-    it 'fetches a custom number of transactions if a limit is provided' do
-      limit = 3
-
-      result = TransactionItem.fetch_transactions_for(user, limit: limit)
-
-      expect(result[:transactions].length).to eq(limit)
-    end
-
-    it 'fetches transactions with an offset if a page number is provided' do
-      page = 1
-
-      result = TransactionItem.fetch_transactions_for(user, page: page)
-
-      expect(result[:transactions][0].date).to be_within(1.hour).of(1.weeks.ago)
-    end
-
-    it 'fetches transactions with a limit and an offset if both are provided' do
-      limit = 3
-      page = 1
-
-      result = TransactionItem.fetch_transactions_for(user, limit: limit, page: page)
-
-      expect(result[:transactions].length).to eq(limit)
-      result[:transactions].each do |transaction_item|
-        expect(transaction_item.date).to be_within(1.hour).of(1.weeks.ago)
-      end
-    end
-
-    it 'sorts transactions on the same date at descending created_at order' do
-      trans1 = create(:transaction_item, created_at: 5.minutes.ago, user: user)
-      trans2 = create(:transaction_item, created_at: 10.minutes.ago, user: user)
-      trans3 = create(:transaction_item, created_at: 15.minutes.ago, user: user)
-
-      result = TransactionItem.fetch_transactions_for(user)
-
-      expect(result[:transactions][0..2]).to eq([trans1, trans2, trans3])
-    end
-
-    it 'does not remove duplicate transaction items over multiple fetches in sequence' do
+    it 'does not provide duplicate transaction items over multiple fetches in sequence' do
       result1 = TransactionItem.fetch_transactions_for(user, limit: 3, page: 0)
       result2 = TransactionItem.fetch_transactions_for(user, limit: 3, page: 1)
       result3 = TransactionItem.fetch_transactions_for(user, limit: 3, page: 2)
