@@ -10,7 +10,8 @@ abort("The Rails environment is running in production mode!") if Rails.env.produ
 
 require 'rspec/rails'
 
-# Require Devise Request Helper
+# Require helpers
+require 'support/request_helper.rb'
 require 'support/devise_request_helper'
 
 # Add additional requires below this line. Rails is not loaded until this point!
@@ -70,6 +71,9 @@ RSpec.configure do |config|
   config.before(:suite) do
     FactoryBot.find_definitions
   end
+
+  # Add general request helpers for request specs
+  config.include RequestHelper, type: :request
 
   # Add Devise helpers to handle user auth in request specs
   config.include DeviseRequestHelper, type: :request
