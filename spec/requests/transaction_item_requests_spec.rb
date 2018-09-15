@@ -292,48 +292,42 @@ RSpec.describe 'transaction items requests:', type: :request do
         fetch_request(params: { sort_attribute: 'date', sort_order: 'asc' })
 
         assert_success
-        expect(trans_id_by_date_asc).to eq(content_transactions_ids),
-                                        "Invalid sorting. Expected following transactions to be sorted by ascending date: #{content_transactions}"
+        expect(trans_id_by_date_asc).to eq(content_transactions_ids)
       end
 
       it 'sorts by descending date (params explicitly provided)' do
         fetch_request(params: { sort_attribute: 'date', sort_order: 'desc' })
 
         assert_success
-        expect(trans_id_by_date_asc.reverse).to eq(content_transactions_ids),
-                                                "Invalid sorting. Expected following transactions to be sorted by descending date: #{content_transactions}"
+        expect(trans_id_by_date_asc.reverse).to eq(content_transactions_ids)
       end
 
       it 'sorts by ascending description (alphabetically)' do
         fetch_request(params: { sort_attribute: 'description', sort_order: 'asc' })
 
         assert_success
-        expect(trans_id_by_desc_asc).to eq(content_transactions_ids),
-                                        "Invalid sorting. Expected following transactions to be sorted by alphabetical description: #{content_transactions}"
+        expect(trans_id_by_desc_asc).to eq(content_transactions_ids)
       end
 
       it 'sorts by descending description (reverse-alphabetically)' do
         fetch_request(params: { sort_attribute: 'description', sort_order: 'desc' })
 
         assert_success
-        expect(trans_id_by_desc_asc.reverse).to eq(content_transactions_ids),
-                                                "Invalid sorting. Expected following transactions to be sorted by reverse-alphabetical description: #{content_transactions}"
+        expect(trans_id_by_desc_asc.reverse).to eq(content_transactions_ids)
       end
 
       it 'sorts by ascending value' do
         fetch_request(params: { sort_attribute: 'value', sort_order: 'asc' })
 
         assert_success
-        expect(trans_id_by_val_asc).to eq(content_transactions_ids),
-                                       "Invalid sorting. Expected following transactions to be sorted by ascending value: #{content_transactions}"
+        expect(trans_id_by_val_asc).to eq(content_transactions_ids)
       end
 
       it 'sorts by descending descending value' do
         fetch_request(params: { sort_attribute: 'value', sort_order: 'desc' })
 
         assert_success
-        expect(trans_id_by_val_asc.reverse).to eq(content_transactions_ids),
-                                               "Invalid sorting. Expected following transactions to be sorted by descending value: #{content_transactions}"
+        expect(trans_id_by_val_asc.reverse).to eq(content_transactions_ids)
       end
 
       it 'fails if an invalid sort attribute param is provided' do
