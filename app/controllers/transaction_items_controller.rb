@@ -55,12 +55,12 @@ class TransactionItemsController < ApplicationController
   def destroy
     trans = current_user.transaction_items.find_by(id: trans_params[:id])
     unless trans
-      return json_response(message: 'Transaction not found', status: 400)
+      return json_response(message: 'Transaction not found', status: 404)
     end
     trans_json = trans.jsonify
     trans.destroy_with_tags!
     json_response(
-      message: 'Transaction deleted', status: 200,
+      message: 'Transaction successfully deleted', status: 200,
       content: trans_json
     )
   end

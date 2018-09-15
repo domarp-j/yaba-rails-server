@@ -10,71 +10,72 @@ RSpec.describe 'transaction items requests:', type: :request do
   end
 
   context 'fetching transactions' do
-    def assert_response_success(response, body)
-      expect(response.success?).to be(true)
-      expect(body['message']).to eq('Transactions successfully fetched')
+    def fetch_request(params: nil)
+      get transaction_items_path,
+          params: params,
+          headers: devise_request_headers
     end
 
-    def assert_response_failure(response, body)
-      expect(response.success?).to be(false)
-      expect(body['message']).to eq('Could not fetch transactions')
+    def content_transactions
+      content['transactions']
+    end
+
+    def assert_success
+      assert_response_success(expected_message: 'Transactions successfully fetched')
+    end
+
+    def assert_failure
+      assert_response_failure(expected_message: 'Could not fetch transactions')
     end
 
     it 'returns the total number of transactions' do
       total_trans = 50
       create_list(:transaction_item, total_trans, :purchase, user: user)
 
-      get transaction_items_path, headers: devise_request_headers
-      body = JSON.parse(response.body)
+      fetch_request
 
-      assert_response_success(response, body)
-      expect(body['content']['count']).to eq(total_trans)
+      assert_success
+      expect(content['count']).to eq(total_trans)
     end
 
     it 'returns the total amount of the transactions' do
       create_list(:transaction_item, 10, :purchase, user: user)
 
-      get transaction_items_path, headers: devise_request_headers
-      body = JSON.parse(response.body)
+      fetch_request
 
       expected_sum = user.transaction_items.map(&:value).reduce(:+)
 
-      assert_response_success(response, body)
-      expect(body['content']['total_amount']).to eq(expected_sum)
+      assert_success
+      expect(content['total_amount']).to eq(expected_sum)
     end
 
     it "returns all of the user's transactions if (s)he has less than #{limit_default} items" do
       create_list(:transaction_item, limit_default - 1, :purchase, user: user)
 
-      get transaction_items_path, headers: devise_request_headers
-      body = JSON.parse(response.body)
+      fetch_request
 
-      assert_response_success(response, body)
-      expect(body['content']['transactions'].length).to eq(limit_default - 1)
+      assert_success
+      expect(content_transactions.length).to eq(limit_default - 1)
     end
 
     it "returns just #{limit_default} transactions if (s)he has more than #{limit_default} transactions" do
       create_list(:transaction_item, limit_default + 1, :purchase, user: user)
 
-      get transaction_items_path, headers: devise_request_headers
-      body = JSON.parse(response.body)
+      fetch_request
 
-      assert_response_success(response, body)
-      expect(body['content']['transactions'].length).to eq(limit_default)
+      assert_success
+      expect(content_transactions.length).to eq(limit_default)
     end
 
     it 'returns a specific number of the user\'s latest transaction items if limit is given as a parameter' do
       create_list(:transaction_item, 10, :purchase, :two_weeks_ago, user: user)
       create_list(:transaction_item, 5, :purchase, :one_week_ago, user: user)
 
-      get transaction_items_path, params: { limit: '5' }, headers: devise_request_headers
-      body = JSON.parse(response.body)
+      fetch_request(params: { limit: '5' })
 
-      transactions = body['content']['transactions']
-
-      assert_response_success(response, body)
-      expect(transactions.length).to eq(5)
-      transactions.each do |transaction|
+      assert_success
+      expect(content_transactions.length).to eq(5)
+      content_transactions.each do |transaction|
         expect(Time.parse(transaction['date'])).to be_within(1.hour).of(1.week.ago)
       end
     end
@@ -83,14 +84,11 @@ RSpec.describe 'transaction items requests:', type: :request do
       create_list(:transaction_item, limit_default, :purchase, :two_weeks_ago, user: user)
       create_list(:transaction_item, limit_default, :purchase, :one_week_ago, user: user)
 
-      get transaction_items_path, params: { page: '1' }, headers: devise_request_headers
-      body = JSON.parse(response.body)
+      fetch_request(params: { page: '1' })
 
-      transactions = body['content']['transactions']
-
-      assert_response_success(response, body)
-      expect(transactions.length).to eq(limit_default)
-      transactions.each do |transaction|
+      assert_success
+      expect(content_transactions.length).to eq(limit_default)
+      content_transactions.each do |transaction|
         expect(Time.parse(transaction['date'])).to be_within(1.hour).of(2.week.ago)
       end
     end
@@ -99,12 +97,10 @@ RSpec.describe 'transaction items requests:', type: :request do
       create_list(:transaction_item, 10, :purchase, :two_weeks_ago, user: user)
       create_list(:transaction_item, 5, :purchase, :one_week_ago, user: user)
 
-      get transaction_items_path, params: { limit: '6', page: '1' }, headers: devise_request_headers
-      body = JSON.parse(response.body)
+      fetch_request(params: { limit: '6', page: '1' })
 
-      assert_response_success(response, body)
-
-      transaction = body['content']['transactions'][0]
+      assert_success
+      transaction = content_transactions[0]
       expect(Time.parse(transaction['date'])).to be_within(1.hour).of(2.week.ago)
     end
 
@@ -144,50 +140,32 @@ RSpec.describe 'transaction items requests:', type: :request do
       end
 
       it 'returns transactions that contain *all* of the provided tags' do
-        get transaction_items_path,
-            params: { tag_names: tag_names },
-            headers: devise_request_headers
+        fetch_request(params: { tag_names: tag_names })
 
-        body = JSON.parse(response.body)
-
-        transactions = body['content']['transactions']
-
-        assert_response_success(response, body)
-        expect(transactions.length).to eq(tag_0_1_trans_count)
-        transactions.each do |trans_json|
+        assert_success
+        expect(content_transactions.length).to eq(tag_0_1_trans_count)
+        content_transactions.each do |trans_json|
           tag_names_in_response = trans_json['tags'].map { |tag_json| tag_json['name'] }
           tag_names_in_response.each { |tag| expect(tag_names).to include(tag) }
         end
       end
 
       it 'returns transactions that contain *all* of the provided tags (case insensitive)' do
-        get transaction_items_path,
-            params: { tag_names: tag_names.map(&:upcase) },
-            headers: devise_request_headers
+        fetch_request(params: { tag_names: tag_names.map(&:upcase) })
 
-        body = JSON.parse(response.body)
-
-        assert_response_success(response, body)
-
-        transactions = body['content']['transactions']
-        expect(transactions.length).to eq(tag_0_1_trans_count)
-        transactions.each do |trans_json|
+        assert_success
+        expect(content_transactions.length).to eq(tag_0_1_trans_count)
+        content_transactions.each do |trans_json|
           tag_names_in_response = trans_json['tags'].map { |tag_json| tag_json['name'] }
           tag_names_in_response.each { |tag| expect(tag_names).to include(tag) }
         end
       end
 
       it 'returns transactions that contain *any* of the provided tags' do
-        get transaction_items_path,
-            params: { tag_names: tag_names, match_all_tags: false },
-            headers: devise_request_headers
+        fetch_request(params: { tag_names: tag_names, match_all_tags: false })
 
-        body = JSON.parse(response.body)
-
-        transactions = body['content']['transactions']
-
-        assert_response_success(response, body)
-        expect(transactions.length).to eq(trans_with_tags_count)
+        assert_success
+        expect(content_transactions.length).to eq(trans_with_tags_count)
       end
     end
 
@@ -203,31 +181,19 @@ RSpec.describe 'transaction items requests:', type: :request do
       end
 
       it 'returns transactions within a specific date range if a from_date or to_date is provided' do
-        get transaction_items_path,
-            params: { from_date: '2018-07-15', to_date: '2018-09-03' },
-            headers: devise_request_headers
+        fetch_request(params: { from_date: '2018-07-15', to_date: '2018-09-03' })
 
-        body = JSON.parse(response.body)
-
-        transactions = body['content']['transactions']
-
-        assert_response_success(response, body)
-        expect(transactions.length).to eq(3)
-        expect(transactions.first['id']).to eq(last_expected_trans.id)
-        expect(transactions.last['id']).to eq(first_expected_trans.id)
+        assert_success
+        expect(content_transactions.length).to eq(3)
+        expect(content_transactions.first['id']).to eq(last_expected_trans.id)
+        expect(content_transactions.last['id']).to eq(first_expected_trans.id)
       end
 
       it 'does not throw an error if any date range params are empty' do
-        get transaction_items_path,
-            params: { from_date: '', to_date: '' },
-            headers: devise_request_headers
+        fetch_request(params: { from_date: '', to_date: '' })
 
-        body = JSON.parse(response.body)
-
-        transactions = body['content']['transactions']
-
-        assert_response_success(response, body)
-        expect(transactions.length).to eq(4)
+        assert_success
+        expect(content_transactions.length).to eq(4)
       end
     end
 
@@ -245,26 +211,16 @@ RSpec.describe 'transaction items requests:', type: :request do
       end
 
       it 'returns transactions that partially match a provided description' do
-        get transaction_items_path,
-            params: { description: desc },
-            headers: devise_request_headers
+        fetch_request(params: { description: desc })
 
-        body = JSON.parse(response.body)
-
-        transactions = body['content']['transactions']
-
-        assert_response_success(response, body)
-        expect(transactions.length).to eq(7)
+        assert_success
+        expect(content_transactions.length).to eq(7)
       end
 
       it 'does not throw an error if the description param is empty' do
-        get transaction_items_path,
-            params: { description: '' },
-            headers: devise_request_headers
+        fetch_request(params: { description: '' })
 
-        body = JSON.parse(response.body)
-
-        assert_response_success(response, body)
+        assert_success
       end
     end
 
@@ -272,44 +228,48 @@ RSpec.describe 'transaction items requests:', type: :request do
       another_user = create(:user, email: 'test2@example.com')
       create_list(:transaction_item, 5, :large_income, user: another_user)
 
-      get transaction_items_path, headers: devise_request_headers
-      body = JSON.parse(response.body)
+      fetch_request
 
-      assert_response_failure(response, body)
+      assert_failure
     end
 
     it 'returns a failure if no transactions are found' do
       another_user = create(:user, email: 'test3@example.com')
-
       sign_in another_user
 
-      get transaction_items_path, headers: devise_request_headers
-      body = JSON.parse(response.body)
+      fetch_request
 
-      assert_response_failure(response, body)
+      assert_failure
     end
 
     it 'does not return a failure if transactions are not returned but page is > 0' do
       limit = 10
       create_list(:transaction_item, limit, user: user)
 
-      get transaction_items_path, params: { limit: limit.to_s, page: '1' }, headers: devise_request_headers
-      body = JSON.parse(response.body)
+      fetch_request(params: { limit: limit.to_s, page: '1' })
 
-      assert_response_success(response, body)
-      expect(body['content']['transactions']).to eq([])
+      assert_success
+      expect(content_transactions).to eq([])
     end
   end
 
   context 'adding a new transaction' do
+    def create_request(params:)
+      post add_transaction_item_path,
+           params: params,
+           headers: devise_request_headers
+    end
+
+    def assert_success
+      assert_response_success(expected_message: 'Transaction successfully created')
+    end
+
     it 'succeeds for a valid description, value, and date ' do
       description = 'Some purchase'
       value = '-12.3'
       date = '2018-07-29'
 
-      post add_transaction_item_path,
-           params: { description: description, value: value, date: date },
-           headers: devise_request_headers
+      create_request(params: { description: description, value: value, date: date })
 
       added_transaction = TransactionItem.find_by(
         description: description,
@@ -317,18 +277,26 @@ RSpec.describe 'transaction items requests:', type: :request do
         date: Time.parse(date)
       )
 
-      json_response = JSON.parse(response.body)['content']
-
-      expect(response.success?).to be(true)
-      expect(json_response['id']).to eq(added_transaction.id)
-      expect(json_response['description']).to eq(description)
-      expect(json_response['value']).to eq(value.to_f)
-      expect(Time.parse(json_response['date'])).to eq(Time.parse(date))
+      assert_success
+      expect(content['id']).to eq(added_transaction.id)
+      expect(content['description']).to eq(description)
+      expect(content['value']).to eq(value.to_f)
+      expect(Time.parse(content['date'])).to eq(Time.parse(date))
       expect(added_transaction).not_to be_nil, 'Expected to find the newly-added transaction'
     end
   end
 
   context 'updating a transaction' do
+    def update_request(params:)
+      post update_transaction_item_path,
+           params: params,
+           headers: devise_request_headers
+    end
+
+    def assert_success
+      assert_response_success(expected_message: 'Transaction successfully updated')
+    end
+
     let(:id) { 1 }
     let(:description) { 'Purchase' }
     let(:value) { -10.3 }
@@ -343,10 +311,9 @@ RSpec.describe 'transaction items requests:', type: :request do
       expect(transaction.description).to eq(description)
 
       updated_description = 'Updated description'
-      post update_transaction_item_path,
-           params: { id: id, description: updated_description },
-           headers: devise_request_headers
+      update_request(params: { id: id, description: updated_description })
 
+      assert_success
       transaction = TransactionItem.find(id)
       expect(transaction.description).to eq(updated_description)
     end
@@ -356,10 +323,9 @@ RSpec.describe 'transaction items requests:', type: :request do
       expect(transaction.value).to eq(value)
 
       updated_value = 100.71
-      post update_transaction_item_path,
-           params: { id: id, value: updated_value },
-           headers: devise_request_headers
+      update_request(params: { id: id, value: updated_value })
 
+      assert_success
       transaction = TransactionItem.find(id)
       expect(transaction.value).to eq(updated_value)
     end
@@ -369,10 +335,9 @@ RSpec.describe 'transaction items requests:', type: :request do
       expect(transaction.date).to eq(date)
 
       updated_date = '2018-07-29'
-      post update_transaction_item_path,
-           params: { id: id, date: updated_date },
-           headers: devise_request_headers
+      update_request(params: { id: id, date: updated_date })
 
+      assert_success
       transaction = TransactionItem.find(id)
       expect(transaction.date).to eq(Time.parse(updated_date))
     end
@@ -386,10 +351,14 @@ RSpec.describe 'transaction items requests:', type: :request do
       updated_description = 'Updated description'
       updated_value = 100.71
       updated_date = '2018-07-29'
-      post update_transaction_item_path,
-           params: { id: id, description: updated_description, value: updated_value, date: updated_date },
-           headers: devise_request_headers
+      update_request(params: {
+                       id: id,
+                       description: updated_description,
+                       value: updated_value,
+                       date: updated_date
+                     })
 
+      assert_success
       transaction = TransactionItem.find(id)
       expect(transaction.description).to eq(updated_description)
       expect(transaction.value).to eq(updated_value)
@@ -397,17 +366,23 @@ RSpec.describe 'transaction items requests:', type: :request do
     end
 
     it 'fails if transaction is not found' do
-      post update_transaction_item_path,
-           params: { id: 1312, description: description, value: value, date: date },
-           headers: devise_request_headers
+      update_request(params: { id: 1312, description: description, value: value, date: date })
 
-      response_body = JSON.parse(response.body)
-
-      expect(response_body['message']).to eq('Transaction not found')
+      assert_response_failure(expected_message: 'Transaction not found')
     end
   end
 
   context 'deleting a transaction' do
+    def delete_request(params:)
+      post delete_transaction_item_path,
+           params: params,
+           headers: devise_request_headers
+    end
+
+    def assert_success
+      assert_response_success(expected_message: 'Transaction successfully deleted')
+    end
+
     let(:id) { 1 }
     let(:description) { 'Purchase' }
     let(:value) { -10.3 }
@@ -416,9 +391,7 @@ RSpec.describe 'transaction items requests:', type: :request do
     it 'succeeds for valid description, value, and date params' do
       create(:transaction_item, id: id, description: description, value: value, date: date, user: user)
 
-      post delete_transaction_item_path,
-           params: { id: 1 },
-           headers: devise_request_headers
+      delete_request(params: { id: 1 })
 
       transaction = TransactionItem.find_by(
         id: id,
@@ -427,7 +400,7 @@ RSpec.describe 'transaction items requests:', type: :request do
         date: date
       )
 
-      expect(response.success?).to be(true)
+      assert_success
       expect(transaction).to be_nil
     end
 
@@ -443,9 +416,7 @@ RSpec.describe 'transaction items requests:', type: :request do
         user: user
       ).first
 
-      post delete_transaction_item_path,
-           params: { id: transaction_to_delete.id },
-           headers: devise_request_headers
+      delete_request(params: { id: transaction_to_delete.id })
 
       transactions = TransactionItem.where(
         description: description,
@@ -453,25 +424,20 @@ RSpec.describe 'transaction items requests:', type: :request do
         date: date
       )
 
-      expect(response.success?).to be(true)
+      assert_success
       expect(transactions.length).to eq(initial_count - 1)
     end
 
     it 'does not delete transaction items of other users' do
       another_user = create(:user, email: 'test2@example.com')
-
       create(:transaction_item, description: description, value: value, date: date, user: user)
       another_users_transaction = create(:transaction_item, description: description, value: value, date: date, user: another_user)
-
       before_delete = another_user.transaction_items.count
 
-      post delete_transaction_item_path,
-           params: { id: another_users_transaction.id },
-           headers: devise_request_headers
+      delete_request(params: { id: another_users_transaction.id })
 
+      assert_response_failure(expected_message: 'Transaction not found')
       after_delete = another_user.transaction_items.count
-
-      expect(response.success?).to be(false)
       expect(before_delete).to eq(after_delete)
     end
   end
