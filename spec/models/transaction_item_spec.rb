@@ -2,7 +2,6 @@ require 'rails_helper'
 
 RSpec.describe TransactionItem, type: :model do
   limit_default = TransactionItem::DEFAULT_LIMIT
-  page_default = TransactionItem::FIRST_PAGE
 
   let(:user) { create(:user) }
 

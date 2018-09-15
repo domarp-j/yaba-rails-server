@@ -6,6 +6,12 @@ class TransactionItem < ApplicationRecord
 
   DEFAULT_LIMIT = 20
   FIRST_PAGE = 0
+  DEFAULT_SORT_ATTRIBUTE = :date
+  DEFAULT_SORT_ORDER = {
+    description: :asc,
+    value: :desc,
+    date: :desc
+  }.freeze
 
   def jsonify
     {
@@ -39,7 +45,9 @@ class TransactionItem < ApplicationRecord
       from_date: nil,
       to_date: nil,
       description: nil,
-      match_all_tags: true
+      match_all_tags: true,
+      sort_attribute: nil,
+      sort_order: nil
     )
       transactions = all_transactions_for(
         user,
@@ -52,7 +60,7 @@ class TransactionItem < ApplicationRecord
       {
         count: transactions.count,
         total_amount: calculate_sum(transactions),
-        transactions: transactions.order(date: :desc, created_at: :desc)
+        transactions: transactions.order(sort_query(sort_attribute, sort_order))
                                   .limit(limit)
                                   .offset(limit * page)
       }
@@ -191,6 +199,16 @@ class TransactionItem < ApplicationRecord
     # do not map to tags
     def no_transactions_query
       { created_at: Time.now + 50.years }
+    end
+
+    # Determine transaction sorting query based on attribute & order
+    def sort_query(sort_attribute, sort_order)
+      attrib = sort_attribute ? sort_attribute : DEFAULT_SORT_ATTRIBUTE
+      order = sort_order || DEFAULT_SORT_ORDER[attrib]
+
+      query = { attrib.to_sym => order }
+      query[:created_at] = :desc if attrib == :date
+      query
     end
   end
 end

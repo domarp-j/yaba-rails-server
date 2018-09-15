@@ -73,6 +73,7 @@ class TransactionItemsController < ApplicationController
       :from_date, :to_date,
       :description,
       :match_all_tags,
+      :sort_attribute, :sort_order,
       tag_names: []
     )
   end
@@ -95,7 +96,9 @@ class TransactionItemsController < ApplicationController
       tag_names: param_for(:tag_names),
       from_date: param_for(:from_date),
       to_date: param_for(:to_date),
-      description: param_for(:description)
+      description: param_for(:description),
+      sort_attribute: param_for(:sort_attribute),
+      sort_order: param_for(:sort_order)
     }
 
     index_query[:limit] = param_for(:limit).to_i if param_for(:limit)
