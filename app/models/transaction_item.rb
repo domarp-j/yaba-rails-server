@@ -207,7 +207,7 @@ class TransactionItem < ApplicationRecord
       order = sort_order || DEFAULT_SORT_ORDER[attrib]
 
       query = { attrib.to_sym => order }
-      query[:created_at] = :desc if attrib == :date
+      query[:created_at] = :desc
       query
     end
   end
