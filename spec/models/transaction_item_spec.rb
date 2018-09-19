@@ -115,9 +115,9 @@ RSpec.describe TransactionItem, type: :model do
     let!(:large_purchase) { create(:transaction_item, :large_purchase, user: user, date: 1.days.ago) }
 
     it 'does not provide duplicate transaction items over multiple fetches in sequence' do
-      result1 = TransactionItem.fetch_transactions_for(user, limit: 3, page: 0)
-      result2 = TransactionItem.fetch_transactions_for(user, limit: 3, page: 1)
-      result3 = TransactionItem.fetch_transactions_for(user, limit: 3, page: 2)
+      result1 = TransactionItem.fetch_transactions_for(user, limit: 3, page: 0, sort_attribute: 'date', sort_order: 'desc')
+      result2 = TransactionItem.fetch_transactions_for(user, limit: 3, page: 1, sort_attribute: 'date', sort_order: 'desc')
+      result3 = TransactionItem.fetch_transactions_for(user, limit: 3, page: 2, sort_attribute: 'date', sort_order: 'desc')
 
       trans_ids = [
         result1[:transactions],
