@@ -30,7 +30,7 @@ class CsvToDbConverter
         puts "Migrating record from CSV to yaba: #{row}"
 
         transaction = user.transaction_items.create(
-          description: row[1],
+          description: remove_quotes(row[1]),
           value: row[2].to_f,
           date: Time.parse(row[0])
         )
@@ -54,6 +54,11 @@ class CsvToDbConverter
     def csv_exists?(csv_file)
       return true if File.exist?(csv_file)
       puts 'Error: could not find CSV file'
+    end
+
+    # Remove quotes from transaction descriptions in CSV, if needed
+    def remove_quotes(desc)
+      ['""', "''"].include?(desc[0] + desc[-1]) ? desc[1..-2] : desc
     end
   end
 end
