@@ -1,16 +1,15 @@
-class TransactionItemsCsvController < ApplicationController
+require 'csv'
+require_relative '../../lib/csv_tools/db_to_csv_converter.rb'
+
+class CsvController < ApplicationController
   before_action :authenticate_user!
 
   # Generate a CSV with all of the current user's transactions
   def index
-    respond_to do |format|
-      format.csv do
-        send_data(
-          generate_csv,
-          filename: 'transactions.csv'
-        )
-      end
-    end
+    send_data(
+      generate_transactions_csv,
+      filename: 'transactions.csv'
+    )
   end
 
   # Upload a CSV with transactions for the current user
@@ -19,9 +18,9 @@ class TransactionItemsCsvController < ApplicationController
 
   private
 
-  def generate_csv
+  def generate_transactions_csv
     CSV.generate do |csv|
-      DbToCsvConverter.populate_csv(csv, user: current_user),
+      DbToCsvConverter.populate_csv(csv, user: current_user)
     end
   end
 end
