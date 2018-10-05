@@ -11,6 +11,7 @@ gem 'pg', '~> 0.18'
 gem 'puma', '~> 3.7'
 gem 'rack-cors', '~> 1.0.2'
 gem 'rails', '~> 5.1.4'
+gem 'responders'
 
 group :development, :test do
   gem 'bullet', '~> 5.7.5'

@@ -12,7 +12,6 @@ Rails.application.routes.draw do
       get '/', to: 'transaction_items#index', as: 'transaction_items'
       post '/', to: 'transaction_items#create', as: 'add_transaction_item'
       get '/csv', to: 'csv#index', as: 'transaction_items_csv'
-      post '/csv', to: 'csv#create', as: 'upload_transaction_items_csv'
 
       scope ':transaction_id/tags' do
         post '/', to: 'tag_transactions#create', as: 'add_tag_transaction'

@@ -1,7 +1,11 @@
+require "application_responder"
+
 class ApplicationController < ActionController::API
   include DeviseTokenAuth::Concerns::SetUserByToken
 
   before_action :configure_permitted_parameters, if: :devise_controller?
+
+  self.responder = ApplicationResponder
 
   protected
 

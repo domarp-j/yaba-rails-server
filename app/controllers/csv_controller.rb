@@ -1,26 +1,36 @@
 require 'csv'
-require_relative '../../lib/csv_tools/db_to_csv_converter.rb'
 
 class CsvController < ApplicationController
   before_action :authenticate_user!
 
+  respond_to :csv
+
   # Generate a CSV with all of the current user's transactions
   def index
-    send_data(
+    respond_with send_data(
       generate_transactions_csv,
-      filename: 'transactions.csv'
+      filename: 'transactions.csv',
+      type: 'text/csv'
     )
-  end
-
-  # Upload a CSV with transactions for the current user
-  def create
+    return
   end
 
   private
 
+  # TODO NOW: Use DbToCsvConverter
   def generate_transactions_csv
     CSV.generate do |csv|
-      DbToCsvConverter.populate_csv(csv, user: current_user)
+      csv << %w[date description value tags]
+
+      current_user.transaction_items.order(:date).limit(5).each do |transaction|
+        t = {
+          date: transaction.date.strftime('%B %d %Y'),
+          description: transaction.description,
+          value: transaction.value,
+          tags: transaction.tags.map(&:name).join(' ')
+        }
+        csv << [t[:date], "'#{t[:description]}'", t[:value], t[:tags]]
+      end
     end
   end
 end
