@@ -1,11 +1,9 @@
-require "application_responder"
 
 class ApplicationController < ActionController::API
   include DeviseTokenAuth::Concerns::SetUserByToken
+  include ActionController::MimeResponds
 
   before_action :configure_permitted_parameters, if: :devise_controller?
-
-  self.responder = ApplicationResponder
 
   protected
 

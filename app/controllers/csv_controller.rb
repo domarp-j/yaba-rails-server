@@ -3,16 +3,16 @@ require 'csv'
 class CsvController < ApplicationController
   before_action :authenticate_user!
 
-  respond_to :csv
-
   # Generate a CSV with all of the current user's transactions
   def index
-    respond_with send_data(
-      generate_transactions_csv,
-      filename: 'transactions.csv',
-      type: 'text/csv'
-    )
-    return
+    respond_to do |format|
+      format.csv do
+        send_data(
+          generate_transactions_csv,
+          filename: 'transactions.csv'
+        )
+      end
+    end
   end
 
   private
