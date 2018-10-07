@@ -176,8 +176,8 @@ RSpec.describe 'transaction items requests:', type: :request do
       before do
         create(:transaction_item, date: Time.parse('July 3 2018'), user: user)
         create(:transaction_item, date: Time.parse('August 15 2018'), user: user)
+        create(:transaction_item, date: Time.parse('October 1 2018'), user: user)
         create(:transaction_item, date: Time.parse('October 5 2018'), user: user)
-        create(:transaction_item, date: Time.parse('October 30 2018'), user: user)
       end
 
       it 'returns transactions within a specific date range if a from_date or to_date is provided' do
@@ -193,7 +193,7 @@ RSpec.describe 'transaction items requests:', type: :request do
         fetch_request(params: { from_date: '', to_date: '' })
 
         assert_success
-        expect(content_transactions.length).to eq(4)
+        expect(content_transactions.length).to eq(user.transaction_items.count)
       end
     end
 
