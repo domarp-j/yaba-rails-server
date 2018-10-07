@@ -4,6 +4,7 @@ class CsvController < ApplicationController
   before_action :authenticate_user!
 
   # Generate a CSV with all of the current user's transactions
+  # TODO: Add tests
   def index
     respond_to do |format|
       format.csv do
