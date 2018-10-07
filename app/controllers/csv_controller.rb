@@ -17,20 +17,23 @@ class CsvController < ApplicationController
 
   private
 
-  # TODO NOW: Use DbToCsvConverter
+  # TODO: Use DbToCsvConverter
   def generate_transactions_csv
     CSV.generate do |csv|
       csv << %w[date description value tags]
 
-      current_user.transaction_items.order(:date).limit(5).each do |transaction|
-        t = {
-          date: transaction.date.strftime('%B %d %Y'),
-          description: transaction.description,
-          value: transaction.value,
-          tags: transaction.tags.map(&:name).join(' ')
-        }
-        csv << [t[:date], "'#{t[:description]}'", t[:value], t[:tags]]
-      end
+      TransactionItem
+        .includes(:tag_transactions, :tags)
+        .where(user: current_user)
+        .order(:date)
+        .each do |transaction|
+          csv << [
+            transaction.date.strftime('%B %d %Y'),
+            "'#{transaction.description}'",
+            transaction.value,
+            transaction.tags.map(&:name).join(' ')
+          ]
+        end
     end
   end
 end

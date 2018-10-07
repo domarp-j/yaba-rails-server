@@ -22,11 +22,10 @@ class DbToCsvConverter
       extract_expense_data(user, option_value('--csv'))
     end
 
-
     def populate_csv(csv, user:, logging: false)
       csv << %w[date description value tags]
 
-      user.transaction_items.order(:date).each do |transaction|
+      TransactionItem.where(user: user).order(:date).each do |transaction|
         t = fetch_transaction_details(transaction)
         puts "Migrating record from yaba to CSV: #{t}" if logging
         csv << [t[:date], "'#{t[:description]}'", t[:value], t[:tags]]
