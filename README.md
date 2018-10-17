@@ -2,16 +2,22 @@
 
 The Rails server & API for yaba, a simple but intuitive budgeting app.
 
+Check out yaba at [yaba.netlify.com](https://yaba.netlify.com)!
+
 ## Setup
 
-Follow the setup instructions on `yaba-infrastructure`'s README. This will set up all of the services needed (including this one) to get the app running.
+Follow the setup instructions on the [yaba-infrastructure](https://github.com/domarp-j/yaba-infrastructure) README. This will set up all of the services needed to get yaba running.
 
-Note: You will have to prepend app-specific commands with `docker-compose run rails-server`. To make life less tedious, you can run `docker-compose run rails-server bash` and run commands as normal from within the `rails-server` container.
+## Running Commands
+
+- After setup, go to your `yaba-infrastructure` directory
+- Run `docker-compose run rails-server bash` to bash into the `yaba-rails-server` container
+- Run commands as needed (i.e. the static analysis & testing commands below)
 
 ## Static Analysis & Testing
 
-- Rubocop `docker-compose run rails-server bundle exec rubocop`
-- RSpec `docker-compose run rails-server bundle exec rspec`
+- Rubocop `bundle exec rubocop`
+- RSpec `bundle exec rspec`
 
 ## Deploys
 
