@@ -24,5 +24,9 @@ Rails.application.routes.draw do
       post '/update', to: 'transaction_items#update', as: 'update_transaction_item' # TODO: make this a PATCH/PUT
       post '/delete', to: 'transaction_items#destroy', as: 'delete_transaction_item' # TODO: make this a DELETE
     end
+
+    scope 'tags' do
+      get '/', to: 'tags#index', as: 'tags'
+    end
   end
 end
