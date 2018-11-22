@@ -142,7 +142,7 @@ class TransactionItem < ApplicationRecord
 
       # Query by date range
       query_from_date = from_date || Time.parse('1970-01-01')
-      query_to_date = to_date || Time.now
+      query_to_date = to_date || latest_transaction_date_for(user)
       query[:date] = query_from_date..query_to_date
 
       query
@@ -209,6 +209,16 @@ class TransactionItem < ApplicationRecord
       query = { attrib.to_sym => order }
       query[:created_at] = :desc
       query
+    end
+
+    # Return the date for the user's latest transaction
+    # Needed to fetch transactions with future dates, particularly when the user
+    # does not provide a "to" date as part of the transaction query.
+    # Add a padding of 1 year to make sure all transactions are found
+    def latest_transaction_date_for(user)
+      latest_transaction = user.transaction_items.order(date: :asc).last
+      return Time.now unless latest_transaction
+      latest_transaction.date + 1.year
     end
   end
 end
