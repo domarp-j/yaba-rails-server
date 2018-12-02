@@ -30,7 +30,7 @@ class CsvToDbConverter
         puts "Migrating record from CSV to yaba: #{row}"
 
         transaction = user.transaction_items.create(
-          description: remove_quotes(row[1]),
+          description: remove_quotes_and_add_tags(row[1], row[3]),
           value: row[2].to_f,
           date: Time.parse(row[0])
         )
@@ -57,8 +57,20 @@ class CsvToDbConverter
     end
 
     # Remove quotes from transaction descriptions in CSV, if needed
-    def remove_quotes(desc)
-      ['""', "''"].include?(desc[0] + desc[-1]) ? desc[1..-2] : desc
+    # Also add tags to end of descriptions as #tag1, #tag2, etc
+    # Tags are added to the description only if '#' chars are not already present
+    def remove_quotes_and_add_tags(desc, tags)
+      desc_no_quotes = if ['""', "''"].include?(desc[0] + desc[-1])
+                         desc[1..-2]
+                       else
+                         desc
+                       end
+
+      if desc_no_quotes =~ /#/
+        desc
+      else
+        "#{desc} #{tags.split.map { |tag| "\##{tag}" }.join(' ')}"
+      end
     end
   end
 end
