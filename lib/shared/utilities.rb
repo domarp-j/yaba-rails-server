@@ -1,39 +1,23 @@
 # Share code between the CSV to DB converter, and vice versa
 
 module ConverterUtilities
-  OPTIONS = {
-    '--user' => "yaba user's email",
-    '--pass' => "yaba user's password",
-    '--csv' => 'location of expense data CSV'
-  }.freeze
-
-  private
-
   # Display error messages about missing options, if needed
-  def check_for_required_args
-    error_messages = collect_errors
+  def check_for_required_args(options)
+    error_messages = []
+    options.each do |option, purpose|
+      error_messages << "Missing option #{option}: #{purpose}" unless option_value(option, options)
+    end
     error_messages.each { |em| puts em }
     error_messages.empty?
   end
 
-  # Collect error messages, if needed
-  def collect_errors
-    error_messages = []
-
-    OPTIONS.each do |option, purpose|
-      error_messages << "Missing option #{option}: #{purpose}" unless option_value(option)
-    end
-
-    error_messages
-  end
-
   # Get value for a shell-provided option
-  def option_value(opt)
+  def option_value(opt, options)
     opt_index = ARGV.index(opt)
     return unless opt_index
 
     option_val = ARGV[opt_index + 1]
-    return unless option_val && !OPTIONS.keys.include?(option_val)
+    return unless option_val && !options.keys.include?(option_val)
 
     option_val
   end
