@@ -9,17 +9,23 @@
 # `rails runner` provides access to Rails models within lib/
 
 require 'csv'
-require_relative './converter_utilities.rb'
+require_relative './shared/utilities.rb'
 
 class DbToCsvConverter
   extend ConverterUtilities
 
+  OPTIONS = {
+    '--user' => "yaba user's email",
+    '--pass' => "yaba user's password",
+    '--csv' => 'location of expense data CSV'
+  }.freeze
+
   class << self
     def execute
-      return unless check_for_required_args
-      user = fetch_user(option_value('--user'), option_value('--pass'))
+      return unless check_for_required_args(OPTIONS)
+      user = fetch_user(option('--user'), option('--pass'))
       return unless user
-      extract_expense_data(user, option_value('--csv'))
+      extract_expense_data(user, option('--csv'))
     end
 
     def populate_csv(csv, user:, logging: false)
@@ -33,6 +39,11 @@ class DbToCsvConverter
     end
 
     private
+
+    # Fetch option
+    def option(value)
+      option_value(value, OPTIONS)
+    end
 
     # Take user transaction data from database and seed CSV
     def extract_expense_data(user, csv_location)
