@@ -77,11 +77,11 @@ class CsvToDbConverter
                          desc
                        end
 
-      # if desc_no_quotes =~ /#/
+      if desc_no_quotes =~ /#/
         desc_no_quotes
-      # else
-        # "#{desc_no_quotes} #{tags.split.map { |tag| "\##{tag}" }.join(' ')}"
-      # end
+      else
+        "#{desc_no_quotes} #{tags.split.map { |tag| "\##{tag}" }.join(' ')}"
+      end
     end
   end
 end
