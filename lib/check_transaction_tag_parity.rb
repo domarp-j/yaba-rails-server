@@ -33,7 +33,7 @@ class CheckTransactionTagParity
     # Check transactions & make sure they have the correct description
     # based on their tags
     def check_transactions(user)
-      puts "Checking transactions..."
+      puts 'Checking transactions...'
 
       faulty_transactions = []
 
@@ -43,11 +43,11 @@ class CheckTransactionTagParity
         faulty_transactions << trans if tags != tags_in_desc
       end
 
-      if faulty_transactions.length > 0
-        puts "Faulty transactions found!"
-        puts "See transactions with IDs: #{faulty_transactions.map { |t| t.id }}"
+      if !faulty_transactions.empty?
+        puts 'Faulty transactions found!'
+        puts "See transactions with IDs: #{faulty_transactions.map(&:id)}"
       else
-        puts "All transactions good!"
+        puts 'All transactions good!'
       end
     end
 
@@ -58,9 +58,7 @@ class CheckTransactionTagParity
 
     # Fetch tags from transaction description
     def pull_tags_from_desc(trans)
-      trans.description.scan(/#([^\s]*)/).flatten.map do |word|
-        word.downcase
-      end.sort
+      trans.description.scan(/#([^\s]*)/).flatten.map(&:downcase).sort
     end
   end
 end
