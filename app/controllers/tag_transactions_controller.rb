@@ -3,6 +3,8 @@ class TagTransactionsController < ApplicationController
 
   before_action :authenticate_user!
 
+  # POST create
+  # Attach a tag to a transaction
   def create
     if transaction_has_tag_with_given_name?
       return json_response(message: 'Transaction already has tag', status: 404)
@@ -22,6 +24,8 @@ class TagTransactionsController < ApplicationController
     end
   end
 
+  # POST update
+  # Update a tag for a transaction
   def update
     tag = Tag.find_for(current_user, tag_params)
     return json_response(message: 'Could not find tag', status: 400) unless tag
@@ -41,6 +45,8 @@ class TagTransactionsController < ApplicationController
     end
   end
 
+  # POST delete
+  # Dissociate a tag and a transaction
   def destroy
     tag = Tag.find_for(current_user, tag_params)
 

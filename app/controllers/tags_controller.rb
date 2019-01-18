@@ -3,6 +3,8 @@ class TagsController < ApplicationController
 
   before_action :authenticate_user!
 
+  # GET index
+  # Fetch all of the user's tags
   def index
     json_response(
       message: 'Tags successfully fetched',

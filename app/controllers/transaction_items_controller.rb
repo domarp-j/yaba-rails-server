@@ -6,6 +6,9 @@ class TransactionItemsController < ApplicationController
   SORT_ATTRIBUTE_PARAMS = %w[description value date].freeze
   SORT_ORDER_PARAMS = %w[asc desc].freeze
 
+  # GET index
+  # Fetch all of the user's transactions
+  # Fetch query is customized based on provided params (see fetch_params)
   def index
     invalid_params = check_for_invalid_params
     if invalid_params.present?
@@ -24,6 +27,8 @@ class TransactionItemsController < ApplicationController
     end
   end
 
+  # POST create
+  # Create a new transaction
   def create
     new_trans = TransactionItem.build_transaction_for(
       current_user, trans_params
@@ -42,6 +47,8 @@ class TransactionItemsController < ApplicationController
     end
   end
 
+  # POST update
+  # Update an existing transaction
   def update
     trans = TransactionItem.update_transaction_for(current_user, trans_params)
 
@@ -60,6 +67,8 @@ class TransactionItemsController < ApplicationController
     end
   end
 
+  # POST destroy
+  # Delete transaction
   def destroy
     trans = current_user.transaction_items.find_by(id: trans_params[:id])
     unless trans
@@ -99,7 +108,6 @@ class TransactionItemsController < ApplicationController
     ActiveRecord::Type::Boolean.new.cast(fetch_params[:match_all_tags])
   end
 
-  # TODO: could be enhanced to check for invalid params outside of sort params
   def check_for_invalid_params
     errors = []
 

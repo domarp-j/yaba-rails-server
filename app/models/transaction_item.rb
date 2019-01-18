@@ -37,6 +37,8 @@ class TransactionItem < ApplicationRecord
   end
 
   class << self
+    # Comprehensive query that fetches transactions for a user based on a
+    # wide variety of filter params.
     def fetch_transactions_for(
       user,
       limit: DEFAULT_LIMIT,
@@ -85,7 +87,8 @@ class TransactionItem < ApplicationRecord
 
     private
 
-    # Using TransactionItem.includes adds several duplicate transactions that changes the sum.
+    # Calculate the sum of a collection of transactions.
+    # NOTE: Using TransactionItem.includes adds several duplicate transactions that changes the sum.
     # This method removes those duplicates & gets the sum for a list of *unique* transactions.
     def calculate_sum(transactions)
       where(id: transactions.pluck(:id).uniq).sum(:value).round(2)
@@ -155,7 +158,7 @@ class TransactionItem < ApplicationRecord
       ['lower(description) like ?', "%#{description.downcase}%"]
     end
 
-    # Return IDs for transactions that are attached to *all* of the provided tags
+    # Get IDs for transactions that are attached to *all* of the provided tags
     def transactions_with_all_tags(tag_ids)
       # Get all of the tag-transactions associated with the provided tag_ids
       # Crucial: Sort by transaction item ID, *then* by tag ID for the next step
@@ -189,14 +192,13 @@ class TransactionItem < ApplicationRecord
       transaction_ids
     end
 
-    # Return IDs for transactions that are attached to *any* of the provided tags
+    # Get IDs for transactions that are attached to *any* of the provided tags
     def transactions_with_any_tags(tag_ids)
       tag_transactions = TagTransaction.where(tag_id: tag_ids)
       tag_transactions.pluck(:transaction_item_id).uniq
     end
 
-    # TODO: Improve how to return 0 transactions if all tag names
-    # do not map to tags
+    # Hacky way to return a query object that will not return any transactions
     def no_transactions_query
       { created_at: Time.now + 50.years }
     end
