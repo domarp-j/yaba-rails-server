@@ -4,7 +4,6 @@ class CsvController < ApplicationController
   before_action :authenticate_user!
 
   # Generate a CSV with all of the current user's transactions
-  # TODO: Add tests
   def index
     respond_to do |format|
       format.csv do
@@ -18,7 +17,6 @@ class CsvController < ApplicationController
 
   private
 
-  # TODO: Use DbToCsvConverter
   def generate_transactions_csv
     CSV.generate do |csv|
       csv << %w[date description value tags]

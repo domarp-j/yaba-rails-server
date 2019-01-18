@@ -296,7 +296,7 @@ RSpec.describe TransactionItem, type: :model do
       let(:negative_description_matches) do
         [
           'Not at all a close description',
-          'Som Purc', # TODO: Support more through fuzzy-matching, like close-enoughs?
+          'Som Purc',
           'Sume Purc',
           'A Purchase'
         ]
